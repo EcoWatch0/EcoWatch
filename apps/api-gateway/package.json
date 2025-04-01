@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "dev": "nest start --watch",
     "build": "nest build",
+    "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
     "test": "jest --passWithNoTests",
@@ -15,6 +17,7 @@
     "@nestjs/core": "^11.0.12",
     "@nestjs/microservices": "^11.0.12",
     "@nestjs/platform-express": "^11.0.12",
+    "@nestjs/swagger": "^11.0.12",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   }
