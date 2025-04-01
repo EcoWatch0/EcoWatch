@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+      - influxdb
+    networks:
+      - ecowatch-network
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ecowatch-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ecowatch-network
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    ports:
+      - "8086:8086"
+    env_file:
+      - .env
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    networks:
+      - ecowatch-network
+
+networks:
+  ecowatch-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  influxdb_data: 
