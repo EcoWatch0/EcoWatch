@@ -41,14 +41,17 @@ jobs:
     - name: Install dependencies
       run: pnpm install
 
+    - name: Build shared library
+      run: pnpm --filter @ecowatch/shared build
+
+    - name: Build services
+      run: pnpm -r build
+
     - name: Lint
-      run: pnpm run lint
+      run: pnpm -r lint
 
     - name: Run tests
-      run: pnpm run test
-
-    - name: Build
-      run: pnpm run build
+      run: pnpm -r test
 
     - name: Security audit
       run: pnpm audit
@@ -57,4 +60,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: dist
-        path: dist/ 
+        path: |
+          apps/*/dist/
+          libs/*/dist/ 
