@@ -16,7 +16,8 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "jsx": "react-jsx"
   },
   "include": ["apps/**/*", "libs/**/*"],
   "exclude": ["**/dist", "**/node_modules"]
