@@ -1,20 +1,20 @@
 version: '3.8'
 
 services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "${PORT:-3000}:3000"
-    env_file:
-      - .env
-    depends_on:
-      - postgres
-      - redis
-      - influxdb
-    networks:
-      - ecowatch-network
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "${PORT:-3000}:3000"
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #     - influxdb
+  #   networks:
+  #     - ecowatch-network
 
   postgres:
     image: postgres:16-alpine
