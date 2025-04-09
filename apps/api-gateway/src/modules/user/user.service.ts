@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@ecowatch/shared';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
 import * as bcrypt from 'bcrypt';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class UserService {
@@ -11,16 +13,19 @@ export class UserService {
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         ...createUserDto,
         password: hashedPassword,
       },
     });
+
+    return plainToInstance(UserResponseDto, user);
   }
 
   async findAll() {
-    return this.prisma.user.findMany();
+    const users = await this.prisma.user.findMany();
+    return plainToInstance(UserResponseDto, users);
   }
 
   async findOne(id: string) {
@@ -32,7 +37,7 @@ export class UserService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    return user;
+    return plainToInstance(UserResponseDto, user);
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
@@ -40,16 +45,19 @@ export class UserService {
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
     }
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
     });
+
+    return plainToInstance(UserResponseDto, updatedUser);
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.user.delete({
+    const deletedUser = await this.prisma.user.delete({
       where: { id },
     });
+    return plainToInstance(UserResponseDto, deletedUser);
   }
 } 
