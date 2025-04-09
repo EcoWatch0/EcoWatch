@@ -13,7 +13,7 @@
     "@influxdata/influxdb-client": "^1.35.0",
     "@nestjs/common": "^11.0.12",
     "@nestjs/config": "^4.0.2",
-    "@nestjs/core": "^11.0.12",
+    "@nestjs/core": "^11.0.14",
     "@nestjs/microservices": "^11.0.13",
     "@prisma/client": "^6.5.0"
   },
