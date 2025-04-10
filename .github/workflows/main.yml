@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
   test-and-build:
@@ -79,6 +79,11 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+        env:
+          DATABASE_URL: postgresql://ecowatch:ecowatch_password@localhost:5432/ecowatch
 
       - name: Build Backend
         run: pnpm --filter api-gateway build
