@@ -6,10 +6,13 @@ import { PrismaService } from '@ecowatch/shared';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private prisma: PrismaService) {
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is not defined. Please set it to a secure value.');
+    }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'your-secret-key',
+      secretOrKey: process.env.JWT_SECRET,
     });
   }
 
