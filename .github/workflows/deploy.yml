@@ -1,0 +1,119 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main    # Production
+      - develop # Pre-production
+
+env:
+  AWS_REGION: eu-west-3
+  ECR_REPOSITORY: ecowatch
+  ECS_SERVICE: ecowatch-service
+  ECS_CLUSTER: ecowatch-cluster
+  ECS_TASK_DEFINITION: ecowatch-task
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'pre-production' }}
+      url: ${{ github.ref == 'refs/heads/main' && 'https://api.ecowatch.com' || 'https://api-staging.ecowatch.com' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+
+      - name: Build Backend
+        run: pnpm --filter api-gateway build
+
+      - name: Build Frontend
+        run: pnpm --filter web build
+
+      - name: Build and push Docker images
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build API Gateway
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY-api:$IMAGE_TAG -f apps/api-gateway/Dockerfile .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY-api:$IMAGE_TAG
+
+          # Build Web
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY-web:$IMAGE_TAG -f apps/web/Dockerfile .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY-web:$IMAGE_TAG
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} \
+          --query taskDefinition > task-definition.json
+
+      - name: Update task definition with new images
+        run: |
+          # Update API Gateway image
+          jq --arg image "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}-api:${{ github.sha }}" \
+            '.containerDefinitions[0].image = $image' task-definition.json > temp.json && mv temp.json task-definition.json
+          
+          # Update Web image
+          jq --arg image "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}-web:${{ github.sha }}" \
+            '.containerDefinitions[1].image = $image' task-definition.json > temp.json && mv temp.json task-definition.json
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Update Route53 DNS
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Update production DNS
+          aws route53 change-resource-record-sets --hosted-zone-id ${{ secrets.HOSTED_ZONE_ID }} \
+          --change-batch '{
+            "Changes": [{
+              "Action": "UPSERT",
+              "ResourceRecordSet": {
+                "Name": "api.ecowatch.com",
+                "Type": "A",
+                "AliasTarget": {
+                  "HostedZoneId": "${{ secrets.ALB_HOSTED_ZONE_ID }}",
+                  "DNSName": "${{ secrets.ALB_DNS_NAME }}",
+                  "EvaluateTargetHealth": false
+                }
+              }
+            }]
+          }'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_REGION }} 
