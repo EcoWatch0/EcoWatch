@@ -28,16 +28,19 @@ FROM node:20-alpine AS runner-api
 
 WORKDIR /app
 
-# Copier les fichiers nécessaires depuis l’étape builder
-COPY --from=builder /app/dist ./dist
+# Copier les fichiers construits pour l'API Gateway
+COPY --from=builder /app/apps/api-gateway/dist ./apps/api-gateway/dist
+# Copier les dépendances (hoistées et spécifiques)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api-gateway/node_modules ./apps/api-gateway/node_modules
 COPY --from=builder /app/libs/shared/node_modules ./libs/shared/node_modules
+COPY --from=builder /app/libs/shared ./libs/shared
+
 
 EXPOSE 3001
 
-# Lancer l’API (remplacez le chemin si nécessaire)
-CMD ["node", "dist/apps/api-gateway/src/main.js"]
+# Lancer l’API Gateway : chemin mis à jour
+CMD ["node", "apps/api-gateway/dist/main.js"]
 
 FROM node:20-alpine AS runner-web
 
