@@ -33,12 +33,19 @@ jobs:
     permissions:
       contents: read
       packages: write
-    env:
-      ENVIRONMENT_TAG: ${{ github.event.inputs.environment == 'main' ? 'prod' : 'pre-prod' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Définir le tag d'environnement
+        id: set-env-tag
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "main" ]; then
+            echo "ENVIRONMENT_TAG=prod" >> $GITHUB_ENV
+          else
+            echo "ENVIRONMENT_TAG=pre-prod" >> $GITHUB_ENV
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -57,14 +64,11 @@ jobs:
             ${{ env.API_IMAGE_NAME }}
             ${{ env.WEB_IMAGE_NAME }}
           tags: |
-            # On utilise le tag défini en fonction de l'environnement (prod ou pre-prod)
             type=raw,value=${{ env.ENVIRONMENT_TAG }}
-            # On garde éventuellement les tags semver basés sur le versionnement
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            # On ajoute 'latest' uniquement si l'environnement est en production (main)
-            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' ? 'true' : 'false' }}
+            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
 
       - name: Build and push API image
         uses: docker/build-push-action@v5
