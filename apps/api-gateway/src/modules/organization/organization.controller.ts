@@ -1,11 +1,10 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
-import { CreateOrganizationDto } from './dto/create-organization.dto';
-import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
+import { OrganizationInboundCreateDto, OrganizationInboundDto } from './dto/organization-inbound.dto';
 
 @Controller('organizations')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -14,7 +13,7 @@ export class OrganizationController {
 
   @Post()
   @Roles(UserRole.ADMIN)
-  create(@Body() createOrganizationDto: CreateOrganizationDto) {
+  create(@Body() createOrganizationDto: OrganizationInboundCreateDto) {
     return this.organizationService.create(createOrganizationDto);
   }
 
@@ -40,7 +39,7 @@ export class OrganizationController {
   @Roles(UserRole.ADMIN)
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateOrganizationDto: UpdateOrganizationDto,
+    @Body() updateOrganizationDto: OrganizationInboundDto,
   ) {
     return this.organizationService.update(id, updateOrganizationDto);
   }
