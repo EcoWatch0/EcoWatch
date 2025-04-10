@@ -1,31 +1,35 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@ecowatch/shared';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UserResponseDto } from './dto/user-response.dto';
 import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
+import { UserInboundCreateDto, UserInboundDto, UserInboundProperties } from './dto/user-inbound.dto';
+import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: UserInboundCreateDto) {
+    if (!createUserDto.password) {
+      throw new Error('Password is required');
+    }
+    
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     
     const user = await this.prisma.user.create({
       data: {
         ...createUserDto,
         password: hashedPassword,
+        role: UserRole.USER,
       },
     });
 
-    return plainToInstance(UserResponseDto, user);
+    return plainToInstance(UserInboundProperties, user);
   }
 
   async findAll() {
     const users = await this.prisma.user.findMany();
-    return plainToInstance(UserResponseDto, users);
+    return plainToInstance(UserInboundProperties, users);
   }
 
   async findOne(id: string) {
@@ -37,10 +41,10 @@ export class UserService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    return plainToInstance(UserResponseDto, user);
+    return plainToInstance(UserInboundProperties, user);
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UserInboundDto) {
     if (updateUserDto.password) {
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
     }
@@ -50,7 +54,7 @@ export class UserService {
       data: updateUserDto,
     });
 
-    return plainToInstance(UserResponseDto, updatedUser);
+    return plainToInstance(UserInboundProperties, updatedUser);
   }
 
   async remove(id: string) {
@@ -58,6 +62,6 @@ export class UserService {
     const deletedUser = await this.prisma.user.delete({
       where: { id },
     });
-    return plainToInstance(UserResponseDto, deletedUser);
+    return plainToInstance(UserInboundProperties, deletedUser);
   }
 } 

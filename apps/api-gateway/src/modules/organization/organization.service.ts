@@ -1,20 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@ecowatch/shared';
-import { CreateOrganizationDto } from './dto/create-organization.dto';
-import { UpdateOrganizationDto } from './dto/update-organization.dto';
+import { OrganizationInboundCreateDto, OrganizationInboundDto, OrganizationInboundProperties } from './dto/organization-inbound.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class OrganizationService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createOrganizationDto: CreateOrganizationDto) {
-    return this.prisma.organization.create({
+  async create(createOrganizationDto: OrganizationInboundCreateDto) {
+    const organization = await this.prisma.organization.create({
       data: createOrganizationDto,
     });
+
+    return plainToInstance(OrganizationInboundProperties, organization);
   }
 
   async findAll() {
-    return this.prisma.organization.findMany({
+    const organizations = await this.prisma.organization.findMany({
       include: {
         memberships: {
           include: {
@@ -23,6 +25,7 @@ export class OrganizationService {
         },
       },
     });
+    return plainToInstance(OrganizationInboundProperties, organizations);
   }
 
   async findOne(id: string) {
@@ -41,27 +44,30 @@ export class OrganizationService {
       throw new NotFoundException(`Organization with ID ${id} not found`);
     }
 
-    return organization;
+    return plainToInstance(OrganizationInboundProperties, organization);
   }
 
-  async update(id: string, updateOrganizationDto: UpdateOrganizationDto) {
+  async update(id: string, updateOrganizationDto: OrganizationInboundDto) {
     await this.findOne(id);
-    return this.prisma.organization.update({
+    const updatedOrganization = await this.prisma.organization.update({
       where: { id },
       data: updateOrganizationDto,
     });
+
+    return plainToInstance(OrganizationInboundProperties, updatedOrganization);
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.organization.delete({
+    const deletedOrganization = await this.prisma.organization.delete({
       where: { id },
     });
+    return plainToInstance(OrganizationInboundProperties, deletedOrganization);
   }
 
   async getMembers(id: string) {
     const organization = await this.findOne(id);
-    return organization.memberships.map(membership => ({
+    return organization.memberships!.map(membership => ({
       ...membership.user,
       role: membership.role,
       joinedAt: membership.joinedAt,
