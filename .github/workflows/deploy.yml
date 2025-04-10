@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: 
       name: ${{ github.ref == 'refs/heads/main' && 'production' || 'pre-production' }}
-      url: ${{ github.ref == 'refs/heads/main' && 'https://api.ecowatch.com' || 'https://api-staging.ecowatch.com' }}
+      url: ${{ github.ref == 'refs/heads/main' && 'https://api.ecowatch.louis-sasse.com' || 'https://api-staging.ecowatch.louis-sasse.com' }}
 
     steps:
       - name: Checkout
@@ -103,7 +103,7 @@ jobs:
             "Changes": [{
               "Action": "UPSERT",
               "ResourceRecordSet": {
-                "Name": "api.ecowatch.com",
+                "Name": "api.ecowatch.louis-sasse.com",
                 "Type": "A",
                 "AliasTarget": {
                   "HostedZoneId": "${{ secrets.ALB_HOSTED_ZONE_ID }}",
