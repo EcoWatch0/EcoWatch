@@ -67,7 +67,7 @@ export class OrganizationService {
 
   async getMembers(id: string) {
     const organization = await this.findOne(id);
-    return organization.memberships!.map(membership => ({
+    return (organization.memberships ?? []).map(membership => ({
       ...membership.user,
       role: membership.role,
       joinedAt: membership.joinedAt,
