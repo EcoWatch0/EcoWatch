@@ -3,11 +3,13 @@
 import * as React from "react"
 import Link from "next/link"
 import { ModeToggle } from "@/components/mode-toggle"
-import { Leaf } from "lucide-react"
 import { MainNav } from "@/components/main-nav"
 import { MobileNav } from "@/components/mobile-nav"
+import { useNavigationMode } from "@/components/navigation/nav-links"
 
 export function Header() {
+  const { title, switchIcon: SwitchIcon } = useNavigationMode()
+
   return (
     <header className="border-b">
       <div className="flex h-16 items-center px-4">
@@ -15,15 +17,15 @@ export function Header() {
         
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="flex items-center gap-2">
-            <Leaf className="h-6 w-6 text-green-600" />
-            <span className="font-bold text-xl">EcoWatch</span>
+            <SwitchIcon className="h-6 w-6 text-green-600" />
+            <span className="font-bold text-xl">{title}</span>
           </Link>
         </div>
         
         <div className="flex md:hidden ml-2">
           <Link href="/" className="flex items-center gap-2">
-            <Leaf className="h-6 w-6 text-green-600" />
-            <span className="font-bold text-xl">EcoWatch</span>
+            <SwitchIcon className="h-6 w-6 text-green-600" />
+            <span className="font-bold text-xl">{title}</span>
           </Link>
         </div>
         
