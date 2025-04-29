@@ -6,9 +6,17 @@ import { ModeToggle } from "@/components/mode-toggle"
 import { MainNav } from "@/components/main-nav"
 import { MobileNav } from "@/components/mobile-nav"
 import { useNavigationMode } from "@/components/navigation/nav-links"
+import { LogoutButton } from "@/components/auth/logout-button"
 
 export function Header() {
   const { title, switchIcon: SwitchIcon } = useNavigationMode()
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false)
+  
+  // Vérifier si l'utilisateur est connecté côté client
+  React.useEffect(() => {
+    const hasToken = document.cookie.includes('token=')
+    setIsAuthenticated(hasToken)
+  }, [])
 
   return (
     <header className="border-b">
@@ -33,8 +41,9 @@ export function Header() {
           <MainNav />
         </div>
         
-        <div className="flex items-center ml-auto">
+        <div className="flex items-center ml-auto gap-2">
           <ModeToggle />
+          {isAuthenticated && <LogoutButton />}
         </div>
       </div>
     </header>

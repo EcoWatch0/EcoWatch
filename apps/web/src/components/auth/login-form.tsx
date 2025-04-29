@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { setCookie } from 'cookies-next';
 
 export function LoginForm() {
   const router = useRouter();
@@ -21,7 +22,14 @@ export function LoginForm() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
+      // Récupérer l'URL de l'API depuis les variables d'environnement
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        throw new Error('API_URL n\'est pas configuré');
+      }
+
+      // Appeler directement l'API gateway
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -34,9 +42,22 @@ export function LoginForm() {
         throw new Error(data.message || 'Identifiants invalides');
       }
 
+      // Récupérer les données de la réponse
+      const data = await response.json();
+      
+      // Stocker le token dans un cookie côté client
+      setCookie('token', data.access_token, {
+        maxAge: 60 * 60 * 24 * 7, // 7 jours
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
+
+      // Rediriger vers le tableau de bord
       router.push('/dashboard');
       router.refresh();
     } catch (err) {
+      console.error('Erreur de connexion:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
     } finally {
       setIsLoading(false);
