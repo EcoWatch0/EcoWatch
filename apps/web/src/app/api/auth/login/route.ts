@@ -6,7 +6,7 @@ export async function POST(request: Request) {
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     if (!apiUrl) {
-      throw new Error('API_URL is not configured');
+      throw new Error('API_URL n\'est pas configuré');
     }
 
     const response = await fetch(`${apiUrl}/auth/login`, {
@@ -20,31 +20,34 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const error = await response.json();
       return NextResponse.json(
-        { message: error.message || 'Login failed' },
+        { message: error.message || 'Échec de connexion' },
         { status: response.status }
       );
     }
 
     const data = await response.json();
     
-    // Set the JWT token in an HTTP-only cookie
     const responseWithCookie = NextResponse.json(
-      { message: 'Login successful' },
+      { 
+        message: 'Connexion réussie',
+        user: data.user
+      },
       { status: 200 }
     );
 
-    responseWithCookie.cookies.set('token', data.token, {
+    responseWithCookie.cookies.set('token', data.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 jours
     });
 
     return responseWithCookie;
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Erreur de connexion:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Erreur interne du serveur' },
       { status: 500 }
     );
   }
