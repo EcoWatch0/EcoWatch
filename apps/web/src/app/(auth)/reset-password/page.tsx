@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
@@ -162,4 +162,18 @@ export default function ResetPasswordPage() {
       </CardContent>
     </>
   )
-} 
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <CardContent>
+        <div className="flex justify-center py-8">
+          <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
+        </div>
+      </CardContent>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
+  )
+}
