@@ -31,7 +31,7 @@
     "typescript-eslint": "^8.31.1"
   },
   "dependencies": {
-    "@nestjs/common": "^11.0.12",
+    "@nestjs/common": "^11.1.0",
     "@nestjs/core": "^11.0.12",
     "@nestjs/platform-express": "^11.0.12",
     "@nestjs/swagger": "^11.1.5",
