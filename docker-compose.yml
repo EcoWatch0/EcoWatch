@@ -80,6 +80,23 @@ services:
       - ./mosquitto/config:/mosquitto/config
     networks:
       - ecowatch-network
+      
+  data-simulator:
+    build:
+      context: .
+      target: runner-data-simulator
+    image: code0ex/ecowatch-data-simulator:latest
+    environment:
+      - NODE_ENV=production
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - MQTT_CLIENT_ID=eco-watch-data-simulator
+      - SIMULATION_INTERVAL_MS=5000
+      - SENSORS_COUNT=5
+    depends_on:
+      - mqtt
+    networks:
+      - ecowatch-network
+    restart: unless-stopped
 
 networks:
   ecowatch-network:

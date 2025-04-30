@@ -1,0 +1,31 @@
+{
+  "name": "data-simulator",
+  "version": "1.0.0",
+  "description": "Microservice qui simule et envoie des données environnementales via MQTT pour EcoWatch",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "watch": "ts-node-dev --respawn src/index.ts",
+    "lint": "eslint . --ext .ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mqtt",
+    "simulator",
+    "ecowatch",
+    "iot",
+    "environmental"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.7.1",
+  "dependencies": {
+    "@types/node": "^22.15.3",
+    "dotenv": "^16.5.0",
+    "mqtt": "^5.12.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
