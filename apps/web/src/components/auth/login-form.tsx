@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { setCookie } from 'cookies-next';
 
 export function LoginForm() {
   const router = useRouter();
@@ -22,7 +22,14 @@ export function LoginForm() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
+      // Récupérer l'URL de l'API depuis les variables d'environnement
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        throw new Error('API_URL n\'est pas configuré');
+      }
+
+      // Appeler directement l'API gateway
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,68 +39,73 @@ export function LoginForm() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || 'Login failed');
+        throw new Error(data.message || 'Identifiants invalides');
       }
 
+      // Récupérer les données de la réponse
+      const data = await response.json();
+      
+      // Stocker le token dans un cookie côté client
+      setCookie('token', data.access_token, {
+        maxAge: 60 * 60 * 24 * 7, // 7 jours
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
+
+      // Rediriger vers le tableau de bord
       router.push('/dashboard');
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Erreur de connexion:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl">Sign in</CardTitle>
-        <CardDescription>
-          Enter your email below to sign in to your account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Button
-                variant="link"
-                className="px-0 font-normal"
-                onClick={() => router.push('/forgot-password')}
-              >
-                Forgot password?
-              </Button>
-            </div>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Signing in...' : 'Sign in'}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="exemple@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Mot de passe</Label>
+          <Button
+            variant="link"
+            className="px-0 font-normal"
+            type="button"
+            onClick={() => router.push('/forgot-password')}
+          >
+            Mot de passe oublié?
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+        <Input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </div>
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? 'Connexion en cours...' : 'Se connecter'}
+      </Button>
+    </form>
   );
 } 
