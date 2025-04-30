@@ -97,6 +97,29 @@ services:
     networks:
       - ecowatch-network
     restart: unless-stopped
+    
+  mqtt-influxdb-service:
+    build:
+      context: ./apps/mqtt-influxdb-service
+      dockerfile: Dockerfile
+    image: code0ex/ecowatch-mqtt-influxdb:latest
+    ports:
+      - "3200:3200"
+    environment:
+      - NODE_ENV=production
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - MQTT_CLIENT_ID=mqtt-influxdb-service
+      - MQTT_TOPIC=ecowatch/#
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+    depends_on:
+      - mqtt
+      - influxdb
+    networks:
+      - ecowatch-network
+    restart: unless-stopped
 
 networks:
   ecowatch-network:
