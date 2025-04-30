@@ -69,6 +69,18 @@ services:
     networks:
       - ecowatch-network
 
+  mqtt:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"  # MQTT standard port
+      - "9001:9001"  # WebSockets port
+    volumes:
+      - mqtt_data:/mosquitto/data
+      - mqtt_log:/mosquitto/log
+      - ./mosquitto/config:/mosquitto/config
+    networks:
+      - ecowatch-network
+
 networks:
   ecowatch-network:
     driver: bridge
@@ -76,4 +88,6 @@ networks:
 volumes:
   postgres_data:
   redis_data:
-  influxdb_data: 
+  influxdb_data:
+  mqtt_data:
+  mqtt_log:
