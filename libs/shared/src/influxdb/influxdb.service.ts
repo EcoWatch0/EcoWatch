@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy, Inject } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, Inject, Logger } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { InfluxDB, Point, WriteApi } from '@influxdata/influxdb-client';
 import { influxdbConfig } from './influxdb.config';
@@ -7,11 +7,23 @@ import { influxdbConfig } from './influxdb.config';
 export class InfluxDBService implements OnModuleDestroy {
   private client: InfluxDB;
   private writeApi: WriteApi;
+  private readonly logger = new Logger(InfluxDBService.name);
 
   constructor(
     @Inject(influxdbConfig.KEY)
     private config: ConfigType<typeof influxdbConfig>,
   ) {
+    // Log configuration for debugging (masking the token partially)
+    const maskedToken = this.config.token 
+      ? `${this.config.token.substring(0, 5)}...${this.config.token.length > 10 ? this.config.token.substring(this.config.token.length - 5) : ''}` 
+      : 'NOT SET';
+    
+    this.logger.log(`InfluxDB configuration: URL=${this.config.url}, Token=${maskedToken}, Org=${this.config.org}, Bucket=${this.config.bucket}`);
+    
+    if (!this.config.token) {
+      this.logger.error('InfluxDB token is missing or empty!');
+    }
+    
     this.client = new InfluxDB({ url: config.url, token: config.token });
     this.writeApi = this.client.getWriteApi(config.org, config.bucket);
   }

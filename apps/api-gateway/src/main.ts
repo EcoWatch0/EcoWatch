@@ -36,6 +36,17 @@ async function bootstrap() {
     }),
   );
 
+  // Handle shutdown signals
+  const signals = ['SIGTERM', 'SIGINT'];
+  signals.forEach(signal => {
+    process.on(signal, async () => {
+      logger.log(`Received ${signal} signal, shutting down gracefully...`);
+      await app.close();
+      logger.log('Application shutdown complete');
+      process.exit(0);
+    });
+  });
+
   const port = process.env.API_PORT || 3001;
   await app.listen(port);
   logger.log(`Application is running on: http://localhost:${port}`);

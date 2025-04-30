@@ -1,0 +1,32 @@
+{
+  "name": "mqtt-influxdb-service",
+  "version": "1.0.0",
+  "description": "Microservice de synchronisation des données entre MQTT et InfluxDB pour EcoWatch",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main",
+    "test": "jest --passWithNoTests",
+    "lint": "eslint \"src/**/*.ts\" --fix"
+  },
+  "dependencies": {
+    "@ecowatch/shared": "workspace:*",
+    "@influxdata/influxdb-client": "^1.35.0",
+    "@nestjs/common": "^11.0.12",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.0",
+    "@nestjs/microservices": "^11.0.13",
+    "@nestjs/platform-express": "^11.0.12",
+    "mqtt": "^5.12.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.8.3"
+  }
+}
