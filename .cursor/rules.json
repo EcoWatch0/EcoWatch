@@ -59,7 +59,7 @@
             "branchNaming": "feature/fix/chore/docs/refactor",
             "noCommitToMain": true,
             "repository": {
-                "owner": "code-ex0",
+                "owner": "EcoWatch0",
                 "name": "EcoWatch"
             }
         },
