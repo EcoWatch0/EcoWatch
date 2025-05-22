@@ -5,8 +5,8 @@ This directory contains custom configuration for the Cursor IDE to optimize deve
 ## Configuration Files
 
 - `.cursorrc` - Main configuration file
-- `rules.json` - Code quality and formatting rules
-- `settings.json` - Editor and project settings
+- `.cursor/rules.json` - Code quality and formatting rules
+- `.cursor/settings.json` - Editor and project settings
 
 ## Key Features
 
