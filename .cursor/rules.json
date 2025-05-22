@@ -1,0 +1,89 @@
+{
+    "rules": {
+        "typescript": {
+            "strictNullChecks": true,
+            "noImplicitAny": true,
+            "noUnusedLocals": true,
+            "noUnusedParameters": true,
+            "exactOptionalPropertyTypes": true,
+            "noImplicitReturns": true,
+            "noFallthroughCasesInSwitch": true
+        },
+        "eslint": {
+            "react": {
+                "reactHooksExhaustiveDeps": "warn",
+                "noUnescapedEntities": "warn",
+                "jsxNoCommentText": "error",
+                "jsxClosingTagLocation": "error"
+            },
+            "imports": {
+                "noUnusedImports": "error",
+                "noDefaultExport": "warn",
+                "orderImports": "warn"
+            },
+            "formatting": {
+                "quoteProps": "as-needed",
+                "trailingComma": "all",
+                "bracketSpacing": true,
+                "arrowParens": "always",
+                "endOfLine": "lf"
+            }
+        },
+        "nestjs": {
+            "controllerNaming": "kebab-case",
+            "serviceNaming": "camel-case",
+            "moduleNaming": "kebab-case",
+            "dtoNaming": "class-validator"
+        },
+        "nextjs": {
+            "pageExtensions": [
+                ".tsx",
+                ".ts"
+            ],
+            "strictMode": true,
+            "optimizeFonts": true,
+            "reactStrictMode": true
+        },
+        "shadcn": {
+            "componentVariants": true,
+            "tailwindClasses": "sort-alphabetically",
+            "componentExtensions": true
+        },
+        "monorepo": {
+            "workspacePackageHoisting": true,
+            "sharedDependencies": true,
+            "consistentDependencyVersions": true
+        },
+        "git": {
+            "conventionalCommits": true,
+            "branchNaming": "feature/fix/chore/docs/refactor",
+            "noCommitToMain": true
+        },
+        "codegen": {
+            "graphql": "enabled",
+            "typeSchema": "enabled"
+        }
+    },
+    "suggestions": {
+        "performance": {
+            "lazyLoading": true,
+            "memoization": true,
+            "asyncComponents": true
+        },
+        "security": {
+            "noHardcodedSecrets": true,
+            "inputSanitization": true,
+            "authGuards": true
+        },
+        "a11y": {
+            "imageAlts": true,
+            "semanticHtml": true,
+            "ariaAttributes": true
+        }
+    },
+    "autoFix": {
+        "imports": true,
+        "formatting": true,
+        "simpleTypeErrors": true
+    }
+}

@@ -1,0 +1,75 @@
+{
+    "projectName": "EcoWatch",
+    "projectDescription": "App for displaying meteorological data from sensors",
+    "codebase": {
+        "structure": "monorepo",
+        "buildTool": "turborepo",
+        "mainLanguage": "typescript",
+        "components": [
+            {
+                "name": "api-gateway",
+                "type": "backend",
+                "framework": "nestjs",
+                "architecture": "microservices"
+            },
+            {
+                "name": "mqtt-influxdb-service",
+                "type": "backend",
+                "framework": "nestjs",
+                "architecture": "microservices"
+            },
+            {
+                "name": "data-simulator",
+                "type": "backend",
+                "framework": "nestjs",
+                "architecture": "microservices"
+            },
+            {
+                "name": "web",
+                "type": "frontend",
+                "framework": "nextjs",
+                "ui": "shadcn/ui"
+            },
+            {
+                "name": "shared",
+                "type": "library",
+                "framework": "typescript",
+                "architecture": "shared"
+            }
+        ]
+    },
+    "preferences": {
+        "indentation": "spaces",
+        "indentSize": 2,
+        "quoteStyle": "single",
+        "semicolons": true,
+        "trailingComma": "es5"
+    },
+    "tools": {
+        "linting": {
+            "eslint": true,
+            "typescript": true
+        },
+        "formatting": {
+            "prettier": true
+        },
+        "testing": {
+            "jest": true
+        }
+    },
+    "cicd": {
+        "enabled": true
+    },
+    "team": {
+        "size": 1,
+        "collaboration": "solo"
+    },
+    "cursorFeatures": {
+        "autoComplete": true,
+        "inlineTypeInfo": true,
+        "semanticHighlighting": true,
+        "pathIntelligence": true,
+        "smartFormatting": true,
+        "contextAwareSuggestions": true
+    }
+}
