@@ -1,0 +1,122 @@
+{
+    "editor": {
+        "fontFamily": "JetBrains Mono, monospace",
+        "fontSize": 14,
+        "lineHeight": 1.5,
+        "tabSize": 2,
+        "insertSpaces": true,
+        "formatOnSave": true,
+        "formatOnPaste": true,
+        "wordWrap": "off",
+        "cursorStyle": "line",
+        "cursorBlinking": "solid",
+        "minimap": {
+            "enabled": true,
+            "side": "right",
+            "showSlider": "always"
+        }
+    },
+    "terminal": {
+        "integrated": {
+            "shell": "/bin/zsh",
+            "fontSize": 13,
+            "lineHeight": 1.2,
+            "scrollback": 5000
+        }
+    },
+    "explorer": {
+        "autoReveal": true,
+        "sortOrder": "type",
+        "exclude": {
+            "patterns": [
+                "**/node_modules",
+                "**/.git",
+                "**/dist",
+                "**/.next",
+                "**/coverage",
+                "**/*.log"
+            ]
+        }
+    },
+    "search": {
+        "exclude": {
+            "patterns": [
+                "**/node_modules",
+                "**/.git",
+                "**/dist",
+                "**/.next",
+                "**/coverage"
+            ]
+        },
+        "smartCase": true
+    },
+    "ai": {
+        "inlineSuggestions": true,
+        "completionTriggerMode": "automatic",
+        "contextAwareness": {
+            "monorepo": true,
+            "projectStructure": true,
+            "codeDependencies": true
+        },
+        "codeActions": {
+            "refactor": true,
+            "test": true,
+            "documentation": true
+        }
+    },
+    "monorepo": {
+        "workspaces": [
+            "apps/*",
+            "libs/*"
+        ],
+        "packageManager": "pnpm",
+        "rootCommands": {
+            "dev": "pnpm --parallel -r run dev",
+            "build": "pnpm --parallel -r run build",
+            "start": "pnpm --parallel -r run start",
+            "lint": "pnpm --parallel -r run lint",
+            "test": "pnpm --parallel -r run test",
+            "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+            "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+            "prisma:studio": "prisma studio --schema prisma/schema.prisma"
+        }
+    },
+    "language": {
+        "typescript": {
+            "suggest": {
+                "completeFunctionCalls": true,
+                "autoImports": true
+            },
+            "preferences": {
+                "quoteStyle": "single",
+                "importModuleSpecifier": "shortest"
+            }
+        },
+        "javascript": {
+            "suggest": {
+                "completeFunctionCalls": true,
+                "autoImports": true
+            },
+            "preferences": {
+                "quoteStyle": "single",
+                "importModuleSpecifier": "shortest"
+            }
+        }
+    },
+    "database": {
+        "client": "prisma",
+        "schema": "prisma/schema.prisma"
+    },
+    "frameworks": {
+        "nestjs": {
+            "version": "11.x"
+        }
+    },
+    "dependencies": {
+        "preferred": {
+            "typescript": "^5.8.2",
+            "eslint": "^9",
+            "prisma": "^6.5.0"
+        }
+    }
+}
