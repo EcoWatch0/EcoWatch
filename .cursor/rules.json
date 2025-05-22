@@ -57,7 +57,11 @@
         "git": {
             "conventionalCommits": true,
             "branchNaming": "feature/fix/chore/docs/refactor",
-            "noCommitToMain": true
+            "noCommitToMain": true,
+            "repository": {
+                "owner": "code-ex0",
+                "name": "EcoWatch"
+            }
         },
         "codegen": {
             "graphql": "enabled",

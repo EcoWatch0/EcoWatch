@@ -48,6 +48,13 @@ The custom rules in `rules.json` enforce:
 4. Monorepo dependency management
 5. Security practices
 
+## Repository Information
+
+- **Owner**: code-ex0
+- **Repository**: EcoWatch
+- **Branch Strategy**: feature/fix/chore/docs/refactor
+- **CI/CD**: Enabled
+
 ## Recommended Extensions
 
 For the best development experience, install these Cursor extensions:
