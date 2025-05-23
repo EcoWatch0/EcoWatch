@@ -16,7 +16,7 @@
     "prisma:studio": "prisma studio --schema prisma/schema.prisma",
     "env:copy:local": "cp env/.env.local apps/web/.env && cp env/.env.local apps/api-gateway/.env && cp env/.env.local apps/mqtt-influxdb-service/.env && cp env/.env.local apps/data-simulator/.env",
     "env:copy:prod": "cp env/.env.prod apps/web/.env && cp env/.env.prod apps/api-gateway/.env && cp env/.env.prod apps/mqtt-influxdb-service/.env && cp env/.env.prod apps/data-simulator/.env",
-    "env:clean": "rm -rf apps/web/.env && rm -rf apps/api-gateway/.env && rm -rf apps/mqtt-influxdb-service/.env && rm -rf apps/data-simulator/.env",
+    "env:clean": "rm -rf apps/web/.env && rm -rf apps/api-gateway/.env && rm -rf apps/mqtt-influxdb-service/.env && rm -rf apps/data-simulator/.env"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
