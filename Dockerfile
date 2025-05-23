@@ -1,3 +1,6 @@
+ARG USER_ID=1001
+ARG GROUP_ID=1001
+
 FROM node:20-alpine AS builder
 
 # Installation de pnpm
@@ -33,8 +36,7 @@ FROM node:20-alpine AS runner-api
 WORKDIR /app
 
 # Créer un utilisateur non-root
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN addgroup -g ${GROUP_ID} -S nodejs && adduser -S nextjs -u ${USER_ID}
 
 # Copier les fichiers construits pour l'API Gateway
 COPY --from=builder /app/apps/api-gateway/dist ./apps/api-gateway/dist
@@ -60,8 +62,7 @@ FROM node:20-alpine AS runner-web
 WORKDIR /app
 
 # Créer un utilisateur non-root
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN addgroup -g ${GROUP_ID} -S nodejs && adduser -S nextjs -u ${USER_ID}
 
 # Copier les fichiers nécessaires pour l'application web
 COPY --from=builder /app/apps/web/.next ./apps/web/.next
@@ -93,8 +94,7 @@ FROM node:20-alpine AS runner-data-simulator
 WORKDIR /app
 
 # Créer un utilisateur non-root
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN addgroup -g ${GROUP_ID} -S nodejs && adduser -S nextjs -u ${USER_ID}
 
 COPY --from=builder /app/apps/data-simulator/dist ./apps/data-simulator/dist
 COPY --from=builder /app/node_modules ./node_modules
@@ -115,8 +115,7 @@ FROM node:20-alpine AS runner-mqtt-influxdb-service
 WORKDIR /app
 
 # Créer un utilisateur non-root
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN addgroup -g ${GROUP_ID} -S nodejs && adduser -S nextjs -u ${USER_ID}
 
 COPY --from=builder /app/apps/mqtt-influxdb-service/dist ./apps/mqtt-influxdb-service/dist
 COPY --from=builder /app/node_modules ./node_modules
