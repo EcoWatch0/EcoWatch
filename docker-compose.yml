@@ -69,6 +69,58 @@ services:
     networks:
       - ecowatch-network
 
+  mqtt:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"  # MQTT standard port
+      - "9001:9001"  # WebSockets port
+    volumes:
+      - mqtt_data:/mosquitto/data
+      - mqtt_log:/mosquitto/log
+      - ./mosquitto/config:/mosquitto/config
+    networks:
+      - ecowatch-network
+      
+  data-simulator:
+    build:
+      context: .
+      target: runner-data-simulator
+    image: code0ex/ecowatch-data-simulator:latest
+    environment:
+      - NODE_ENV=production
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - MQTT_CLIENT_ID=eco-watch-data-simulator
+      - SIMULATION_INTERVAL_MS=5000
+      - SENSORS_COUNT=5
+    depends_on:
+      - mqtt
+    networks:
+      - ecowatch-network
+    restart: unless-stopped
+    
+  mqtt-influxdb-service:
+    build:
+      context: ./apps/mqtt-influxdb-service
+      dockerfile: Dockerfile
+    image: code0ex/ecowatch-mqtt-influxdb:latest
+    ports:
+      - "3200:3200"
+    environment:
+      - NODE_ENV=production
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - MQTT_CLIENT_ID=mqtt-influxdb-service
+      - MQTT_TOPIC=ecowatch/#
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+    depends_on:
+      - mqtt
+      - influxdb
+    networks:
+      - ecowatch-network
+    restart: unless-stopped
+
 networks:
   ecowatch-network:
     driver: bridge
@@ -76,4 +128,6 @@ networks:
 volumes:
   postgres_data:
   redis_data:
-  influxdb_data: 
+  influxdb_data:
+  mqtt_data:
+  mqtt_log:
