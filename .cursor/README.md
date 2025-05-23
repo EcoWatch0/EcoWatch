@@ -50,7 +50,7 @@ The custom rules in `rules.json` enforce:
 
 ## Repository Information
 
-- **Owner**: code-ex0
+- **Owner**: EcoWatch0
 - **Repository**: EcoWatch
 - **Branch Strategy**: feature/fix/chore/docs/refactor
 - **CI/CD**: Enabled
