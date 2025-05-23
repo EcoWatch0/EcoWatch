@@ -75,3 +75,13 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/data-simulator/node_modules ./apps/data-simulator/node_modules
 
 CMD ["node", "apps/data-simulator/dist/index.js"]
+
+FROM node:20-alpine AS runner-mqtt-influxdb-service
+
+WORKDIR /app
+
+COPY --from=builder /app/apps/mqtt-influxdb-service/dist ./apps/mqtt-influxdb-service/dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/mqtt-influxdb-service/node_modules ./apps/mqtt-influxdb-service/node_modules
+
+CMD ["node", "apps/mqtt-influxdb-service/dist/main.js"]
