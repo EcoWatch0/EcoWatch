@@ -10,6 +10,8 @@ COPY pnpm-workspace.yaml ./
 COPY package.json pnpm-lock.yaml ./
 COPY apps/api-gateway/package.json ./apps/api-gateway/
 COPY apps/web/package.json ./apps/web/
+COPY apps/mqtt-influxdb-service/package.json ./apps/mqtt-influxdb-service/
+COPY apps/data-simulator/package.json ./apps/data-simulator/
 COPY libs/shared/package.json ./libs/shared/
 
 # Installation des dépendances
