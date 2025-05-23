@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - feature/trivy
     tags:
       - 'v*'
   workflow_dispatch:
