@@ -58,15 +58,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata for Docker
-        id: meta
+      # Extract metadata for API image
+      - name: Extract metadata for API image
+        id: meta-api
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ${{ env.API_IMAGE_NAME }}
-            ${{ env.WEB_IMAGE_NAME }}
-            ${{ env.MQTT_INFLUXDB_SERVICE_IMAGE_NAME }}
-            ${{ env.DATA_SIMULATOR_IMAGE_NAME }}
+          images: ${{ env.API_IMAGE_NAME }}
           tags: |
             type=raw,value=${{ env.ENVIRONMENT_TAG }}
             type=semver,pattern={{version}}
@@ -74,24 +71,99 @@ jobs:
             type=semver,pattern={{major}}
             type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
 
+      # Extract metadata for Web image
+      - name: Extract metadata for Web image
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.WEB_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.ENVIRONMENT_TAG }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
+
+      # Extract metadata for MQTT InfluxDB Service image
+      - name: Extract metadata for MQTT InfluxDB Service image
+        id: meta-mqtt-influxdb-service
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.MQTT_INFLUXDB_SERVICE_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.ENVIRONMENT_TAG }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
+
+      # Extract metadata for Data Simulator image
+      - name: Extract metadata for Data Simulator image
+        id: meta-data-simulator
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DATA_SIMULATOR_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.ENVIRONMENT_TAG }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
+
+      # Scan Dockerfile for vulnerabilities
+      - name: Run Trivy vulnerability scanner on Dockerfile
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+      # Build and push API image
       - name: Build and push API image
         uses: docker/build-push-action@v5
         with:
           context: .
           target: runner-api
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
+           
+      # Build and push Web image
       - name: Build and push Web image
         uses: docker/build-push-action@v5
         with:
           context: .
           target: runner-web
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # build and push mqtt-influxdb-service image
+      - name: Build and push mqtt-influxdb-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: runner-mqtt-influxdb-service
+          push: true
+          tags: ${{ steps.meta-mqtt-influxdb-service.outputs.tags }}
+          labels: ${{ steps.meta-mqtt-influxdb-service.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # build and push data-simulator image
+      - name: Build and push data-simulator image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: runner-data-simulator
+          push: true
+          tags: ${{ steps.meta-data-simulator.outputs.tags }}
+          labels: ${{ steps.meta-data-simulator.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
