@@ -23,6 +23,7 @@ RUN pnpm --filter shared build
 RUN pnpm prisma generate
 RUN pnpm --filter api-gateway build
 RUN pnpm --filter web build
+RUN pnpm --filter data-simulator build
 
 FROM node:20-alpine AS runner-api
 
@@ -62,3 +63,13 @@ ENV PATH /app/apps/web/node_modules/.bin:$PATH
 
 # Lancer Next en mode production
 CMD ["next", "start"]
+
+FROM node:20-alpine AS runner-data-simulator
+
+WORKDIR /app
+
+COPY --from=builder /app/apps/data-simulator/dist ./apps/data-simulator/dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/data-simulator/node_modules ./apps/data-simulator/node_modules
+
+CMD ["node", "apps/data-simulator/dist/index.js"]

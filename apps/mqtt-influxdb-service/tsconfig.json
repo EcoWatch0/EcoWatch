@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "@ecowatch/shared": ["../../libs/shared/src"]
+    }
+  },
+  "include": ["src/**/*", "src/tsconfig.build.json"],
+  "exclude": ["node_modules", "dist", "test"]
+} 
