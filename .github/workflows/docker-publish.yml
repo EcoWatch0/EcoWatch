@@ -26,6 +26,8 @@ env:
   REGISTRY: docker.io
   API_IMAGE_NAME: code0ex/ecowatch-api
   WEB_IMAGE_NAME: code0ex/ecowatch-web
+  MQTT_INFLUXDB_SERVICE_IMAGE_NAME: code0ex/ecowatch-mqtt-influxdb-service
+  DATA_SIMULATOR_IMAGE_NAME: code0ex/ecowatch-data-simulator
 
 jobs:
   build-and-push:
@@ -63,6 +65,8 @@ jobs:
           images: |
             ${{ env.API_IMAGE_NAME }}
             ${{ env.WEB_IMAGE_NAME }}
+            ${{ env.MQTT_INFLUXDB_SERVICE_IMAGE_NAME }}
+            ${{ env.DATA_SIMULATOR_IMAGE_NAME }}
           tags: |
             type=raw,value=${{ env.ENVIRONMENT_TAG }}
             type=semver,pattern={{version}}
