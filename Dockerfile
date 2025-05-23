@@ -26,6 +26,7 @@ RUN pnpm prisma generate
 RUN pnpm --filter api-gateway build
 RUN pnpm --filter web build
 RUN pnpm --filter data-simulator build
+RUN pnpm --filter mqtt-influxdb-service build
 
 FROM node:20-alpine AS runner-api
 
@@ -67,6 +68,8 @@ COPY --from=builder /app/apps/web/.next ./apps/web/.next
 COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=builder /app/libs/shared/node_modules ./libs/shared/node_modules
+COPY --from=builder /app/libs/shared ./libs/shared
 
 # Changer le propriétaire des fichiers
 RUN chown -R nextjs:nodejs /app
@@ -96,6 +99,8 @@ RUN adduser -S nextjs -u 1001
 COPY --from=builder /app/apps/data-simulator/dist ./apps/data-simulator/dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/data-simulator/node_modules ./apps/data-simulator/node_modules
+COPY --from=builder /app/libs/shared/node_modules ./libs/shared/node_modules
+COPY --from=builder /app/libs/shared ./libs/shared
 
 # Changer le propriétaire des fichiers
 RUN chown -R nextjs:nodejs /app
@@ -116,6 +121,8 @@ RUN adduser -S nextjs -u 1001
 COPY --from=builder /app/apps/mqtt-influxdb-service/dist ./apps/mqtt-influxdb-service/dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/mqtt-influxdb-service/node_modules ./apps/mqtt-influxdb-service/node_modules
+COPY --from=builder /app/libs/shared/node_modules ./libs/shared/node_modules
+COPY --from=builder /app/libs/shared ./libs/shared
 
 # Changer le propriétaire des fichiers
 RUN chown -R nextjs:nodejs /app
