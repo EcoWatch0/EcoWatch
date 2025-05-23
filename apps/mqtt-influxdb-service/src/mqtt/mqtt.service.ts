@@ -77,7 +77,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
 
       // If there were failures, log them
       if (failed > 0) {
-        results.forEach((result, index) => {
+        results.forEach((result) => {
           if (result.status === 'rejected') {
             this.logger.error(`Failed to write point: ${(result as PromiseRejectedResult).reason}`);
 
@@ -182,22 +182,11 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
           await this.processEnvironmentalData(data);
         } catch (parseError) {
           this.logger.error(`Error parsing message: ${parseError.message}`);
-          // Store failed messages for later analysis
-          this.storeFailedMessage(topic, message.toString());
         }
       }
     } catch (error) {
       this.logger.error(`Error processing message: ${error.message}`);
     }
-  }
-
-  private storeFailedMessage(topic: string, message: string) {
-    // Implement storage of failed messages
-    // In a production system, this could write to a file, database, or send to a monitoring service
-    this.logger.warn(`Storing failed message from topic ${topic} for later analysis`);
-
-    // For now, just log it, but in production you'd implement actual storage
-    // For example, you could use a dead-letter queue pattern
   }
 
   private validateMessage(data: any): boolean {
@@ -289,37 +278,34 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  onModuleDestroy() {
-    return new Promise<void>(async (resolve) => {
-      try {
-        this.isShuttingDown = true;
-        this.logger.log('MQTT service shutting down');
+  async onModuleDestroy(): Promise<void> {
+    try {
+      this.isShuttingDown = true;
+      this.logger.log('MQTT service shutting down');
 
-        // Clear the timer
-        if (this.processingTimer) {
-          clearInterval(this.processingTimer);
-        }
+      // Clear the timer
+      if (this.processingTimer) {
+        clearInterval(this.processingTimer);
+      }
 
-        // Final flush of any remaining data
-        if (this.dataBuffer.length > 0) {
-          this.logger.log(`Final flush of ${this.dataBuffer.length} points before shutdown`);
-          await this.flushBuffer();
-        }
+      // Final flush of any remaining data
+      if (this.dataBuffer.length > 0) {
+        this.logger.log(`Final flush of ${this.dataBuffer.length} points before shutdown`);
+        await this.flushBuffer();
+      }
 
-        // Close MQTT connection
-        if (this.client) {
-          this.logger.log('Closing MQTT connection');
+      // Close MQTT connection
+      if (this.client) {
+        this.logger.log('Closing MQTT connection');
+        return new Promise<void>((resolve) => {
           this.client.end(false, {}, () => {
             this.logger.log('MQTT connection closed');
             resolve();
           });
-        } else {
-          resolve();
-        }
-      } catch (error) {
-        this.logger.error(`Error during shutdown: ${error.message}`);
-        resolve();
+        });
       }
-    });
+    } catch (error) {
+      this.logger.error(`Error during shutdown: ${error.message}`);
+    }
   }
 } 
