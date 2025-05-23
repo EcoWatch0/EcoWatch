@@ -4,22 +4,22 @@ import { config } from './config';
 // Generation des données aléatoires
 export class DataSimulator {
   private sensorIds: string[] = [];
-  
+
   constructor() {
     // Initialiser les IDs des capteurs
     for (let i = 0; i < config.simulation.sensorsCount; i++) {
       this.sensorIds.push(`sensor-${i + 1}`);
     }
   }
-  
+
   // Générer une lecture aléatoire pour un type de capteur
   private generateReading(sensorId: string, type: SensorType): SensorReading {
     const now = new Date();
-    
+
     // Définir les plages de valeurs et unités en fonction du type de capteur
     let value: number;
     let unit: string;
-    
+
     switch (type) {
       case 'temperature':
         value = this.randomInRange(15, 35); // °C
@@ -42,11 +42,11 @@ export class DataSimulator {
         unit = '%';
         break;
     }
-    
+
     // Générer des coordonnées géographiques autour de Paris (pour l'exemple)
     const lat = this.randomInRange(48.8, 48.9);
     const lng = this.randomInRange(2.3, 2.4);
-    
+
     return {
       id: `${sensorId}-${type}`,
       type,
@@ -65,15 +65,15 @@ export class DataSimulator {
       }
     };
   }
-  
+
   // Générer des données complètes pour un capteur
   public generateSensorData(sensorId: string): EnvironmentalData {
     // Liste des types de capteurs à simuler
     const sensorTypes: SensorType[] = ['temperature', 'humidity', 'airQuality', 'waterQuality', 'soilMoisture'];
-    
+
     // Générer des lectures pour chaque type
     const readings = sensorTypes.map(type => this.generateReading(sensorId, type));
-    
+
     return {
       sensorId,
       readings,
@@ -84,12 +84,12 @@ export class DataSimulator {
       }
     };
   }
-  
+
   // Générer des données pour tous les capteurs
   public generateAllSensorsData(): EnvironmentalData[] {
     return this.sensorIds.map(id => this.generateSensorData(id));
   }
-  
+
   // Utilitaire pour générer un nombre aléatoire dans une plage
   private randomInRange(min: number, max: number): number {
     return Math.round((Math.random() * (max - min) + min) * 10) / 10;

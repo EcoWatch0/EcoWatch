@@ -16,4 +16,4 @@ import { mqttConfig, serviceConfig } from './config';
     MqttModule,
   ],
 })
-export class AppModule {} 
+export class AppModule { } 
