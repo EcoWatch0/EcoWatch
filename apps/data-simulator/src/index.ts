@@ -9,16 +9,12 @@ console.log(`Configuration: ${config.simulation.sensorsCount} sensors, interval:
 const simulator = new DataSimulator();
 const publisher = new MqttPublisher();
 
-// Variable pour stocker l'identifiant de l'intervalle
-let intervalId: NodeJS.Timeout;
-
 // Fonction pour générer et publier des données
 const generateAndPublish = () => {
   try {
     console.log('\n--- Generating new sensor data ---');
     const allSensorsData = simulator.generateAllSensorsData();
-    
-    console.log(`Generated data for ${allSensorsData.length} sensors`);
+
     publisher.publishAllSensorsData(allSensorsData);
   } catch (error) {
     console.error('Error in simulation cycle:', error);
@@ -28,13 +24,13 @@ const generateAndPublish = () => {
 // Gérer l'arrêt propre de l'application
 process.on('SIGINT', async () => {
   console.log('\nShutting down...');
-  
+
   // Arrêter l'intervalle
   clearInterval(intervalId);
-  
+
   // Fermer la connexion MQTT
   await publisher.close();
-  
+
   console.log('EcoWatch Data Simulator stopped.');
   process.exit(0);
 });
@@ -42,6 +38,8 @@ process.on('SIGINT', async () => {
 // Démarrer la simulation
 console.log(`Starting simulation cycle every ${config.simulation.intervalMs}ms`);
 generateAndPublish(); // Exécuter immédiatement une première fois
-intervalId = setInterval(generateAndPublish, config.simulation.intervalMs);
+
+// Variable pour stocker l'identifiant de l'intervalle
+const intervalId = setInterval(generateAndPublish, config.simulation.intervalMs);
 
 console.log('EcoWatch Data Simulator running. Press Ctrl+C to stop.'); 
