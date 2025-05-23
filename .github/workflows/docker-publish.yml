@@ -85,6 +85,32 @@ jobs:
             type=semver,pattern={{major}}
             type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
 
+      # Extract metadata for MQTT InfluxDB Service image
+      - name: Extract metadata for MQTT InfluxDB Service image
+        id: meta-mqtt-influxdb-service
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.MQTT_INFLUXDB_SERVICE_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.ENVIRONMENT_TAG }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
+
+      # Extract metadata for Data Simulator image
+      - name: Extract metadata for Data Simulator image
+        id: meta-data-simulator
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DATA_SIMULATOR_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.ENVIRONMENT_TAG }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
+
       # Scan Dockerfile for vulnerabilities
       - name: Run Trivy vulnerability scanner on Dockerfile
         uses: aquasecurity/trivy-action@master
