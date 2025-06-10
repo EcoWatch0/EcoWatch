@@ -1,13 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-// @ts-ignore - InfluxDB client APIs
-import { InfluxDB, BucketsAPI, OrgsAPI } from '@influxdata/influxdb-client-apis';
+import { BucketsAPI, OrgsAPI, Bucket } from '@influxdata/influxdb-client-apis';
+import { InfluxDB } from '@influxdata/influxdb-client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
-    InfluxBucket,
-    CreateBucketRequest,
     BucketSyncResult,
     OrganizationBucketInfo
-} from './influxdb-bucket.interface';
+} from './interface/influxdb-bucket.interface';
 
 @Injectable()
 export class InfluxDBBucketService {
@@ -186,7 +184,7 @@ export class InfluxDBBucketService {
     /**
      * Récupère un bucket par son nom
      */
-    async getBucketByName(bucketName: string): Promise<InfluxBucket | null> {
+    async getBucketByName(bucketName: string): Promise<Bucket | null> {
         try {
             const buckets = await this.bucketsAPI.getBuckets({ name: bucketName });
             return buckets?.buckets?.[0] || null;

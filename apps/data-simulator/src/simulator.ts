@@ -1,4 +1,4 @@
-import { SensorReading, SensorType, EnvironmentalData, DatabaseSensor } from './types';
+import { SensorReading, EnvironmentalData, DatabaseSensor } from './types';
 import { DatabaseService } from './database.service';
 import { config } from './config';
 
@@ -68,7 +68,7 @@ export class DataSimulator {
     const lng = sensor.longitude || this.randomInRange(2.3, 2.4);
 
     return {
-      id: `${sensor.id}-${sensor.type}-${Date.now()}`,
+      id: `${sensor.id}-${sensor.type}`,
       type: sensor.type,
       value,
       unit,
