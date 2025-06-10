@@ -38,6 +38,15 @@ enum AlertCondition {
   EQUALS // Valeur égale au seuil
 }
 
+/// Statut de synchronisation des buckets InfluxDB
+enum BucketSyncStatus {
+  PENDING // En attente de création
+  CREATING // En cours de création
+  ACTIVE // Bucket créé et synchronisé
+  ERROR // Erreur de synchronisation
+  DELETING // En cours de suppression
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -56,10 +65,21 @@ model Organization {
   name    String
   address String?
 
+  // InfluxDB Integration
+  influxBucketName    String?          @unique
+  influxBucketId      String?          @unique
+  influxOrgId         String? // InfluxDB Organization ID
+  bucketCreatedAt     DateTime?
+  bucketSyncStatus    BucketSyncStatus @default(PENDING)
+  bucketRetentionDays Int?             @default(90) // Rétention par défaut 90 jours
+
   memberships OrganizationMembership[]
   sensors     Sensor[]
   createdAt   DateTime                 @default(now())
   updatedAt   DateTime                 @updatedAt
+
+  @@index([influxBucketName])
+  @@index([bucketSyncStatus])
 }
 
 /// Table de jointure pour gérer les rôles d'un utilisateur dans une organisation
