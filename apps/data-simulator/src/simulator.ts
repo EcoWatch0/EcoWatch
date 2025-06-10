@@ -1,93 +1,135 @@
-import { SensorReading, SensorType, EnvironmentalData } from './types';
+import { SensorReading, SensorType, EnvironmentalData, DatabaseSensor } from './types';
+import { DatabaseService } from './database.service';
 import { config } from './config';
 
 // Generation des données aléatoires
 export class DataSimulator {
-  private sensorIds: string[] = [];
+  private sensors: DatabaseSensor[] = [];
+  private databaseService: DatabaseService;
 
   constructor() {
-    // Initialiser les IDs des capteurs
-    for (let i = 0; i < config.simulation.sensorsCount; i++) {
-      this.sensorIds.push(`sensor-${i + 1}`);
-    }
+    this.databaseService = new DatabaseService();
   }
 
-  // Générer une lecture aléatoire pour un type de capteur
-  private generateReading(sensorId: string, type: SensorType): SensorReading {
+  /**
+   * Initialise les capteurs depuis la base de données
+   */
+  async initialize() {
+    console.log('Initializing simulator with database sensors...');
+
+    // Créer des capteurs de test si nécessaire
+    await this.databaseService.createTestSensors();
+
+    // Récupérer les capteurs actifs
+    this.sensors = await this.databaseService.getActiveSensors();
+
+    console.log(`Found ${this.sensors.length} active sensors`);
+    this.sensors.forEach(sensor => {
+      console.log(`  - ${sensor.name} (${sensor.type}) - Org: ${sensor.organization.name}`);
+    });
+  }
+
+  // Générer une lecture aléatoire pour un capteur spécifique
+  private generateReading(sensor: DatabaseSensor): SensorReading {
     const now = new Date();
 
     // Définir les plages de valeurs et unités en fonction du type de capteur
     let value: number;
     let unit: string;
 
-    switch (type) {
-      case 'temperature':
+    switch (sensor.type) {
+      case 'TEMPERATURE':
         value = this.randomInRange(15, 35); // °C
         unit = '°C';
         break;
-      case 'humidity':
+      case 'HUMIDITY':
         value = this.randomInRange(30, 90); // %
         unit = '%';
         break;
-      case 'airQuality':
+      case 'AIR_QUALITY':
         value = this.randomInRange(0, 500); // AQI
         unit = 'AQI';
         break;
-      case 'waterQuality':
-        value = this.randomInRange(0, 14); // pH
-        unit = 'pH';
+      case 'PRESSURE':
+        value = this.randomInRange(990, 1030); // hPa
+        unit = 'hPa';
         break;
-      case 'soilMoisture':
-        value = this.randomInRange(0, 100); // %
-        unit = '%';
+      case 'NOISE_LEVEL':
+        value = this.randomInRange(30, 100); // dB
+        unit = 'dB';
         break;
+      default:
+        value = this.randomInRange(0, 100);
+        unit = 'unknown';
     }
 
-    // Générer des coordonnées géographiques autour de Paris (pour l'exemple)
-    const lat = this.randomInRange(48.8, 48.9);
-    const lng = this.randomInRange(2.3, 2.4);
+    // Utiliser les coordonnées du capteur ou des coordonnées par défaut
+    const lat = sensor.latitude || this.randomInRange(48.8, 48.9);
+    const lng = sensor.longitude || this.randomInRange(2.3, 2.4);
 
     return {
-      id: `${sensorId}-${type}`,
-      type,
+      id: `${sensor.id}-${sensor.type}-${Date.now()}`,
+      type: sensor.type,
       value,
       unit,
       timestamp: now.toISOString(),
       location: {
         lat,
         lng,
-        name: `Location ${sensorId}`
+        name: sensor.location || `Location ${sensor.id}`
       },
       batteryLevel: this.randomInRange(10, 100),
       metadata: {
         accuracy: this.randomInRange(90, 99),
-        readingInterval: config.simulation.intervalMs
+        readingInterval: config.simulation.intervalMs,
+        sensorName: sensor.name,
+        organizationId: sensor.organizationId
       }
     };
   }
 
   // Générer des données complètes pour un capteur
-  public generateSensorData(sensorId: string): EnvironmentalData {
-    // Liste des types de capteurs à simuler
-    const sensorTypes: SensorType[] = ['temperature', 'humidity', 'airQuality', 'waterQuality', 'soilMoisture'];
-
-    // Générer des lectures pour chaque type
-    const readings = sensorTypes.map(type => this.generateReading(sensorId, type));
+  public generateSensorData(sensor: DatabaseSensor): EnvironmentalData {
+    // Générer une lecture pour ce capteur spécifique
+    const reading = this.generateReading(sensor);
 
     return {
-      sensorId,
-      readings,
+      sensorId: sensor.id,
+      readings: [reading], // Un seul type de reading par capteur
       deviceInfo: {
-        id: `device-${sensorId}`,
-        model: 'EcoWatchSensor-v1',
-        firmware: '1.0.0'
+        id: `device-${sensor.id}`,
+        model: 'EcoWatchSensor-v2',
+        firmware: '2.0.0'
       }
     };
   }
 
-  // Générer des données pour tous les capteurs
+  // Générer des données pour tous les capteurs actifs
   public generateAllSensorsData(): EnvironmentalData[] {
-    return this.sensorIds.map(id => this.generateSensorData(id));
+    if (this.sensors.length === 0) {
+      console.warn('No sensors available. Did you call initialize()?');
+      return [];
+    }
+
+    return this.sensors
+      .filter(sensor => sensor.organization.bucketSyncStatus === 'ACTIVE') // Seuls les capteurs avec bucket actif
+      .map(sensor => this.generateSensorData(sensor));
+  }
+
+  // Obtenir les informations des capteurs chargés
+  public getSensorsInfo() {
+    return this.sensors.map(sensor => ({
+      id: sensor.id,
+      name: sensor.name,
+      type: sensor.type,
+      organization: sensor.organization.name,
+      bucketStatus: sensor.organization.bucketSyncStatus
+    }));
+  }
+
+  // Nettoyer les ressources
+  async cleanup() {
+    await this.databaseService.disconnect();
   }
 
   // Utilitaire pour générer un nombre aléatoire dans une plage
