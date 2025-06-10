@@ -1,18 +1,33 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@ecowatch/shared';
+import { InfluxDBBucketService, influxdbConfig, InfluxDBService, PrismaService } from '@ecowatch/shared';
 import { OrganizationInboundCreateDto, OrganizationInboundDto, OrganizationInboundProperties } from './dto/organization-inbound.dto';
 import { plainToInstance } from 'class-transformer';
-
 @Injectable()
 export class OrganizationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private influxDBService: InfluxDBService, private influxDBBucketService: InfluxDBBucketService) {
+    console.log(influxdbConfig());
+  }
 
   async create(createOrganizationDto: OrganizationInboundCreateDto) {
+    // get organisation from config service
+    console.log(influxdbConfig().org);
+
     const organization = await this.prisma.organization.create({
-      data: createOrganizationDto,
+      data: {
+        ...createOrganizationDto,
+      },
     });
 
-    return plainToInstance(OrganizationInboundProperties, organization);
+    const bucket = await this.influxDBBucketService.createBucketForOrganization(organization.id);
+    console.log(bucket);
+
+    const updatedOrganization = await this.prisma.organization.findUnique({
+      where: { id: organization.id },
+    });
+
+    console.log(updatedOrganization);
+
+    return plainToInstance(OrganizationInboundProperties, updatedOrganization);
   }
 
   async findAll() {
