@@ -32,7 +32,8 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     this.BATCH_INTERVAL = this.serviceConfigService.batchInterval;
 
     // Set log level
-    Logger.overrideLogger(this.serviceConfigService.logLevel as any);
+
+    // Logger.overrideLogger(this.serviceConfigService.logLevel as any);
   }
 
   onModuleInit() {
@@ -254,6 +255,8 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
           }
         }
       });
+
+      console.log(sensor);
 
       if (!sensor) {
         this.logger.error(`Sensor ${data.sensorId} not found in database`);

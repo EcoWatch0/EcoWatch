@@ -324,6 +324,9 @@ importers:
       '@influxdata/influxdb-client':
         specifier: ^1.35.0
         version: 1.35.0
+      '@influxdata/influxdb-client-apis':
+        specifier: ^1.35.0
+        version: 1.35.0(@influxdata/influxdb-client@1.35.0)
       '@nestjs/common':
         specifier: ^11.0.12
         version: 11.0.12(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
