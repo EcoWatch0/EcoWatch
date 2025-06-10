@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit, Inject, Logger } from '@nestjs/common';
 import { ConfigService, ConfigType } from '@nestjs/config';
 import * as mqtt from 'mqtt';
-import { InfluxDBService } from '@ecowatch/shared';
+import { InfluxDBService, InfluxDBBucketService, PrismaService } from '@ecowatch/shared';
 import { mqttConfig, serviceConfig } from '../config';
 import { SensorReading, EnvironmentalData, InfluxPoint } from '@ecowatch/shared';
 
@@ -14,12 +14,14 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   private readonly MAX_RETRIES: number;
   private readonly BATCH_SIZE: number;
   private readonly BATCH_INTERVAL: number;
-  private dataBuffer: InfluxPoint[] = [];
+  private dataBuffer: Map<string, InfluxPoint[]> = new Map(); // Groupé par bucket
   private processingTimer: NodeJS.Timeout | null = null;
   private isShuttingDown = false;
 
   constructor(
     private influxDBService: InfluxDBService,
+    private influxDBBucketService: InfluxDBBucketService,
+    private prismaService: PrismaService,
     private configService: ConfigService,
     @Inject(mqttConfig.KEY)
     private readonly mqttConfigService: ConfigType<typeof mqttConfig>,
@@ -36,7 +38,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleInit() {
-    this.logger.log('Initializing MQTT service');
+    this.logger.log('Initializing MQTT service with multi-tenant bucket support');
     this.connectToMqtt();
     this.startPeriodicBufferFlush();
   }
@@ -45,46 +47,55 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     // Flush buffer based on the interval from configuration
     this.logger.log(`Setting up periodic buffer flush every ${this.BATCH_INTERVAL}ms`);
     this.processingTimer = setInterval(() => {
-      this.flushBuffer();
+      this.flushAllBuffers();
     }, this.BATCH_INTERVAL);
   }
 
-  private async flushBuffer() {
-    if (this.dataBuffer.length === 0) return;
+  private async flushAllBuffers() {
+    if (this.dataBuffer.size === 0) return;
 
     try {
-      const batchSize = Math.min(this.BATCH_SIZE, this.dataBuffer.length);
-      const batch = this.dataBuffer.splice(0, batchSize);
+      this.logger.log(`Flushing ${this.dataBuffer.size} bucket buffers to InfluxDB`);
 
-      this.logger.log(`Flushing buffer with ${batch.length} points to InfluxDB`);
+      for (const [bucketName, points] of this.dataBuffer.entries()) {
+        if (points.length === 0) continue;
 
-      // Process points in parallel with a concurrency limit
-      const results = await Promise.allSettled(
-        batch.map(point =>
-          this.influxDBService.writePoint(
-            point.measurement,
-            point.tags,
-            point.fields
+        const batchSize = Math.min(this.BATCH_SIZE, points.length);
+        const batch = points.splice(0, batchSize);
+
+        this.logger.log(`Flushing ${batch.length} points to bucket: ${bucketName}`);
+
+        // Process points for this specific bucket
+        const results = await Promise.allSettled(
+          batch.map(point =>
+            this.influxDBService.writePointToBucket(
+              point.measurement,
+              point.tags,
+              point.fields,
+              bucketName
+            )
           )
-        )
-      );
+        );
 
-      // Count successes and failures
-      const successful = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
+        // Count successes and failures
+        const successful = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
 
-      this.logger.log(`Buffer flush complete: ${successful} successful, ${failed} failed`);
+        this.logger.log(`Bucket ${bucketName} flush complete: ${successful} successful, ${failed} failed`);
 
-      // If there were failures, log them
-      if (failed > 0) {
-        results.forEach((result) => {
-          if (result.status === 'rejected') {
-            this.logger.error(`Failed to write point: ${(result as PromiseRejectedResult).reason}`);
+        // If there were failures, log them
+        if (failed > 0) {
+          results.forEach((result) => {
+            if (result.status === 'rejected') {
+              this.logger.error(`Failed to write point to ${bucketName}: ${(result as PromiseRejectedResult).reason}`);
+            }
+          });
+        }
 
-            // In a production system, you might want to implement a dead-letter queue
-            // or retry mechanism for failed points
-          }
-        });
+        // Nettoyer les buffers vides
+        if (points.length === 0) {
+          this.dataBuffer.delete(bucketName);
+        }
       }
     } catch (error) {
       this.logger.error(`Error flushing buffer: ${error.message}`);
@@ -233,6 +244,31 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     try {
       this.logger.log(`Processing data from sensor: ${data.sensorId} (${data.readings.length} readings)`);
 
+      // 🔄 NOUVEAU: Récupérer les informations de l'organisation du capteur
+      const sensor = await this.prismaService.sensor.findUnique({
+        where: { id: data.sensorId },
+        include: {
+          organization: {
+            select: {
+              influxBucketName: true,
+              bucketSyncStatus: true
+            }
+          }
+        }
+      });
+
+      if (!sensor) {
+        this.logger.error(`Sensor ${data.sensorId} not found in database`);
+        return;
+      }
+
+      if (!sensor.organization.influxBucketName || sensor.organization.bucketSyncStatus !== 'ACTIVE') {
+        this.logger.error(`Bucket not ready for sensor ${data.sensorId} organization`);
+        return;
+      }
+
+      const bucketName = sensor.organization.influxBucketName;
+
       // For each sensor reading, create a point
       for (const reading of data.readings) {
         // Check for anomalous readings
@@ -242,39 +278,96 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
           // Still process the reading but tag it as anomalous
         }
 
-        // Add to buffer instead of writing directly
-        this.dataBuffer.push({
-          measurement: 'environmental_data',
+        // 🔄 NOUVEAU: Créer le point avec les informations de l'organisation
+        const point: InfluxPoint = {
+          measurement: `sensor_${reading.type.toLowerCase()}`,
           tags: {
-            sensorId: data.sensorId,
+            sensor_id: data.sensorId,
+            organization_id: sensor.organizationId,
             type: reading.type,
             unit: reading.unit,
-            deviceId: data.deviceInfo.id,
-            model: data.deviceInfo.model,
-            firmware: data.deviceInfo.firmware,
+            device_id: data.deviceInfo.id,
+            model: data.deviceInfo.model || 'unknown',
+            firmware: data.deviceInfo.firmware || 'unknown',
             latitude: reading.location.lat.toString(),
             longitude: reading.location.lng.toString(),
-            locationName: reading.location.name || 'Unknown',
+            location_name: reading.location.name || 'Unknown',
             anomalous: isAnomalous ? 'true' : 'false'
           },
           fields: {
             value: reading.value,
-            batteryLevel: reading.batteryLevel || 0,
+            battery_level: reading.batteryLevel || 0,
             timestamp: new Date(reading.timestamp).getTime(),
             // Add any additional metadata as fields
             ...(reading.metadata || {})
           }
+        };
+
+        // 🔄 NOUVEAU: Ajouter au buffer spécifique du bucket
+        if (!this.dataBuffer.has(bucketName)) {
+          this.dataBuffer.set(bucketName, []);
+        }
+        this.dataBuffer.get(bucketName)!.push(point);
+      }
+
+      // 🔄 NOUVEAU: Vérifier si le buffer pour ce bucket atteint le seuil
+      const bucketBuffer = this.dataBuffer.get(bucketName);
+      if (bucketBuffer && bucketBuffer.length >= this.BATCH_SIZE) {
+        await this.flushBucketBuffer(bucketName);
+      }
+
+      this.logger.debug(`Added ${data.readings.length} readings to bucket ${bucketName} buffer`);
+    } catch (error) {
+      this.logger.error(`Error processing environmental data: ${error.message}`);
+    }
+  }
+
+  /**
+   * 🔄 NOUVEAU: Flush d'un buffer spécifique
+   */
+  private async flushBucketBuffer(bucketName: string) {
+    const bucketBuffer = this.dataBuffer.get(bucketName);
+    if (!bucketBuffer || bucketBuffer.length === 0) return;
+
+    try {
+      const batchSize = Math.min(this.BATCH_SIZE, bucketBuffer.length);
+      const batch = bucketBuffer.splice(0, batchSize);
+
+      this.logger.log(`Flushing ${batch.length} points to bucket: ${bucketName}`);
+
+      // Process points for this specific bucket
+      const results = await Promise.allSettled(
+        batch.map(point =>
+          this.influxDBService.writePointToBucket(
+            point.measurement,
+            point.tags,
+            point.fields,
+            bucketName
+          )
+        )
+      );
+
+      // Count successes and failures
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      this.logger.log(`Bucket ${bucketName} flush complete: ${successful} successful, ${failed} failed`);
+
+      // If there were failures, log them
+      if (failed > 0) {
+        results.forEach((result) => {
+          if (result.status === 'rejected') {
+            this.logger.error(`Failed to write point to ${bucketName}: ${(result as PromiseRejectedResult).reason}`);
+          }
         });
       }
 
-      // If buffer reaches threshold, flush it
-      if (this.dataBuffer.length >= this.BATCH_SIZE) {
-        this.flushBuffer();
+      // Nettoyer le buffer s'il est vide
+      if (bucketBuffer.length === 0) {
+        this.dataBuffer.delete(bucketName);
       }
-
-      this.logger.debug(`Added ${data.readings.length} readings to buffer (current size: ${this.dataBuffer.length})`);
     } catch (error) {
-      this.logger.error(`Error processing environmental data: ${error.message}`);
+      this.logger.error(`Error flushing bucket ${bucketName} buffer: ${error.message}`);
     }
   }
 
@@ -289,9 +382,10 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       }
 
       // Final flush of any remaining data
-      if (this.dataBuffer.length > 0) {
-        this.logger.log(`Final flush of ${this.dataBuffer.length} points before shutdown`);
-        await this.flushBuffer();
+      if (this.dataBuffer.size > 0) {
+        const totalPoints = Array.from(this.dataBuffer.values()).reduce((sum, points) => sum + points.length, 0);
+        this.logger.log(`Final flush of ${totalPoints} points before shutdown`);
+        await this.flushAllBuffers();
       }
 
       // Close MQTT connection
