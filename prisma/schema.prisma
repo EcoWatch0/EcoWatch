@@ -9,53 +9,124 @@ datasource db {
 
 /// Rôle global de l'utilisateur sur l'application
 enum UserRole {
-  ADMIN       // Droit total sur l'application
-  OPERATOR    // Gestion des données météo
-  USER        // Accès basique / consultation
+  ADMIN // Droit total sur l'application
+  OPERATOR // Gestion des données météo
+  USER // Accès basique / consultation
 }
 
 /// Rôle spécifique au sein d'une organisation
 enum OrgRole {
-  MANAGER     // Responsable de l'organisation
-  SUPERVISOR  // Supervisé(e) sur certaines tâches
-  STAFF       // Employé(e) ou collaborateur(trice)
-  CONSULTANT  // Conseiller(ère) externe
+  MANAGER // Responsable de l'organisation
+  SUPERVISOR // Supervisé(e) sur certaines tâches
+  STAFF // Employé(e) ou collaborateur(trice)
+  CONSULTANT // Conseiller(ère) externe
+}
+
+/// Types de capteurs environnementaux
+enum SensorType {
+  TEMPERATURE // Capteur de température
+  HUMIDITY // Capteur d'humidité
+  PRESSURE // Capteur de pression atmosphérique
+  AIR_QUALITY // Capteur de qualité de l'air
+  NOISE_LEVEL // Capteur de niveau sonore
+}
+
+/// Conditions pour les alertes
+enum AlertCondition {
+  GREATER_THAN // Valeur supérieure au seuil
+  LESS_THAN // Valeur inférieure au seuil
+  EQUALS // Valeur égale au seuil
 }
 
 model User {
-  id          String                      @id @default(cuid())
-  email       String                      @unique
-  password    String
-  firstName   String
-  lastName    String
-  role        UserRole                    @default(USER)
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole @default(USER)
 
   memberships OrganizationMembership[]
-  createdAt   DateTime                    @default(now())
-  updatedAt   DateTime                    @updatedAt
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
 }
 
 model Organization {
-  id          String                      @id @default(uuid())
-  name        String
-  address     String?
+  id      String  @id @default(uuid())
+  name    String
+  address String?
 
   memberships OrganizationMembership[]
-  createdAt   DateTime                    @default(now())
-  updatedAt   DateTime                    @updatedAt
+  sensors     Sensor[]
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
 }
 
 /// Table de jointure pour gérer les rôles d'un utilisateur dans une organisation
 model OrganizationMembership {
-  id             String       @id @default(cuid())
-  user           User         @relation(fields: [userId], references: [id])
-  
+  id   String @id @default(cuid())
+  user User   @relation(fields: [userId], references: [id])
+
   userId         String
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String
 
-  role           OrgRole      @default(STAFF)
-  joinedAt       DateTime     @default(now())
+  role     OrgRole  @default(STAFF)
+  joinedAt DateTime @default(now())
 
   @@unique([userId, organizationId])
+}
+
+/// Capteurs environnementaux liés à une organisation
+model Sensor {
+  id             String     @id @default(cuid())
+  name           String
+  type           SensorType
+  location       String
+  latitude       Float?
+  longitude      Float?
+  organizationId String
+  isActive       Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  data         SensorData[]
+  alerts       Alert[]
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([isActive])
+}
+
+/// Données collectées par les capteurs
+model SensorData {
+  id        String   @id @default(cuid())
+  sensorId  String
+  value     Float
+  unit      String
+  timestamp DateTime @default(now())
+
+  sensor Sensor @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@index([sensorId])
+  @@index([timestamp])
+  @@index([sensorId, timestamp])
+}
+
+/// Alertes configurées sur les capteurs
+model Alert {
+  id            String         @id @default(cuid())
+  sensorId      String
+  threshold     Float
+  condition     AlertCondition
+  isActive      Boolean        @default(true)
+  lastTriggered DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  sensor Sensor @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@index([sensorId])
+  @@index([isActive])
 }
