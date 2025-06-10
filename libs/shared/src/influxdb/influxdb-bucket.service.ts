@@ -5,7 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
     BucketSyncResult,
     OrganizationBucketInfo
-} from './interface/influxdb-bucket.interface';
+} from './influxdb-bucket.interface';
+import { influxdbConfig } from './config/influxdb.config';
 
 @Injectable()
 export class InfluxDBBucketService {
@@ -48,9 +49,6 @@ export class InfluxDBBucketService {
                 data: { bucketSyncStatus: 'CREATING' }
             });
 
-            // Récupérer l'organisation InfluxDB par défaut
-            const influxOrgId = process.env.INFLUXDB_ORG || 'ecowatch';
-
             // Générer le nom du bucket
             const bucketName = this.generateBucketName(organizationId);
 
@@ -70,7 +68,7 @@ export class InfluxDBBucketService {
             const bucket = await this.bucketsAPI.postBuckets({
                 body: {
                     name: bucketName,
-                    orgID: influxOrgId,
+                    orgID: influxdbConfig().orgId,
                     retentionRules: [{
                         type: 'expire',
                         everySeconds: retentionPeriod
@@ -89,7 +87,7 @@ export class InfluxDBBucketService {
                 data: {
                     influxBucketName: bucketName,
                     influxBucketId: bucket.id,
-                    influxOrgId: influxOrgId,
+                    influxOrgId: influxdbConfig().orgId,
                     bucketCreatedAt: new Date(),
                     bucketSyncStatus: 'ACTIVE',
                     bucketRetentionDays: 90

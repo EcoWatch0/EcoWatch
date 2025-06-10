@@ -54,41 +54,6 @@ export class DatabaseService {
     }
 
     /**
- * Récupère l'ID de l'organisation InfluxDB
- */
-    private async getInfluxOrgId(): Promise<string> {
-        try {
-            const orgName = influxdbConfig().org || 'ecowatch';
-
-            // Récupérer toutes les organisations
-            const orgs = await this.orgsAPI.getOrgs({ org: orgName });
-
-            if (orgs?.orgs && orgs.orgs.length > 0) {
-                const orgId = orgs.orgs[0].id;
-                if (orgId) {
-                    console.log(`Found InfluxDB organization: ${orgName} (ID: ${orgId})`);
-                    return orgId;
-                }
-            }
-
-            // Si l'organisation n'existe pas, utiliser la première organisation disponible
-            const allOrgs = await this.orgsAPI.getOrgs();
-            if (allOrgs?.orgs && allOrgs.orgs.length > 0) {
-                const fallbackOrgId = allOrgs.orgs[0].id;
-                if (fallbackOrgId) {
-                    console.log(`Using fallback InfluxDB organization: ${allOrgs.orgs[0].name} (ID: ${fallbackOrgId})`);
-                    return fallbackOrgId;
-                }
-            }
-
-            throw new Error('No InfluxDB organization found');
-        } catch (error) {
-            console.error('Error getting InfluxDB organization ID:', error);
-            throw error;
-        }
-    }
-
-    /**
      * Crée un bucket InfluxDB pour une organisation
      */
     private async createInfluxBucket(organizationId: string): Promise<{ success: boolean, bucketName?: string, bucketId?: string, error?: string }> {
@@ -96,7 +61,7 @@ export class DatabaseService {
             console.log(`Creating InfluxDB bucket for organization ${organizationId}`);
 
             const bucketName = `ecowatch_org_${organizationId}`;
-            const influxOrgId = await this.getInfluxOrgId();
+            const influxOrgId = influxdbConfig().orgId;
 
             // Vérifier si le bucket existe déjà
             const existingBuckets = await this.bucketsAPI.getBuckets({ name: bucketName });
@@ -116,7 +81,6 @@ export class DatabaseService {
                     name: bucketName,
                     orgID: influxOrgId,
                     retentionRules: [{
-
                         type: 'expire',
                         everySeconds: retentionPeriod
                     }],
@@ -192,7 +156,7 @@ export class DatabaseService {
                         data: {
                             influxBucketName: bucketResult.bucketName,
                             influxBucketId: bucketResult.bucketId,
-                            influxOrgId: influxdbConfig().org || 'ecowatch',
+                            influxOrgId: influxdbConfig().orgId,
                             bucketCreatedAt: new Date(),
                             bucketSyncStatus: 'ACTIVE',
                             bucketRetentionDays: 90
