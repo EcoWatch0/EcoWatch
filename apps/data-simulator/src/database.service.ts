@@ -1,24 +1,28 @@
 import { PrismaClient, SensorType } from '@prisma/client';
 import { InfluxDB } from '@influxdata/influxdb-client';
-import { BucketsAPI } from '@influxdata/influxdb-client-apis';
+import { BucketsAPI, OrgsAPI } from '@influxdata/influxdb-client-apis';
+import { influxdbConfig, } from '@ecowatch/shared';
+
 
 export class DatabaseService {
     private prisma: PrismaClient;
     private bucketsAPI: BucketsAPI;
+    private orgsAPI: OrgsAPI;
 
     constructor() {
         this.prisma = new PrismaClient();
 
         // Initialiser l'API InfluxDB pour la création de buckets
-        const url = process.env.INFLUXDB_URL || 'http://localhost:8086';
-        const token = process.env.INFLUXDB_TOKEN;
-
-        if (!token) {
+        if (!influxdbConfig().token) {
             throw new Error('INFLUXDB_TOKEN environment variable is required');
         }
 
-        const influxDB = new InfluxDB({ url, token });
+        const influxDB = new InfluxDB({
+            url: influxdbConfig().url,
+            token: influxdbConfig().token
+        });
         this.bucketsAPI = new BucketsAPI(influxDB);
+        this.orgsAPI = new OrgsAPI(influxDB);
     }
 
     /**
@@ -50,14 +54,49 @@ export class DatabaseService {
     }
 
     /**
- * Crée un bucket InfluxDB pour une organisation
+ * Récupère l'ID de l'organisation InfluxDB
  */
+    private async getInfluxOrgId(): Promise<string> {
+        try {
+            const orgName = influxdbConfig().org || 'ecowatch';
+
+            // Récupérer toutes les organisations
+            const orgs = await this.orgsAPI.getOrgs({ org: orgName });
+
+            if (orgs?.orgs && orgs.orgs.length > 0) {
+                const orgId = orgs.orgs[0].id;
+                if (orgId) {
+                    console.log(`Found InfluxDB organization: ${orgName} (ID: ${orgId})`);
+                    return orgId;
+                }
+            }
+
+            // Si l'organisation n'existe pas, utiliser la première organisation disponible
+            const allOrgs = await this.orgsAPI.getOrgs();
+            if (allOrgs?.orgs && allOrgs.orgs.length > 0) {
+                const fallbackOrgId = allOrgs.orgs[0].id;
+                if (fallbackOrgId) {
+                    console.log(`Using fallback InfluxDB organization: ${allOrgs.orgs[0].name} (ID: ${fallbackOrgId})`);
+                    return fallbackOrgId;
+                }
+            }
+
+            throw new Error('No InfluxDB organization found');
+        } catch (error) {
+            console.error('Error getting InfluxDB organization ID:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Crée un bucket InfluxDB pour une organisation
+     */
     private async createInfluxBucket(organizationId: string): Promise<{ success: boolean, bucketName?: string, bucketId?: string, error?: string }> {
         try {
             console.log(`Creating InfluxDB bucket for organization ${organizationId}`);
 
             const bucketName = `ecowatch_org_${organizationId}`;
-            const influxOrgId = process.env.INFLUXDB_ORG || 'ecowatch';
+            const influxOrgId = await this.getInfluxOrgId();
 
             // Vérifier si le bucket existe déjà
             const existingBuckets = await this.bucketsAPI.getBuckets({ name: bucketName });
@@ -77,6 +116,7 @@ export class DatabaseService {
                     name: bucketName,
                     orgID: influxOrgId,
                     retentionRules: [{
+
                         type: 'expire',
                         everySeconds: retentionPeriod
                     }],
@@ -152,7 +192,7 @@ export class DatabaseService {
                         data: {
                             influxBucketName: bucketResult.bucketName,
                             influxBucketId: bucketResult.bucketId,
-                            influxOrgId: process.env.INFLUXDB_ORG || 'ecowatch',
+                            influxOrgId: influxdbConfig().org || 'ecowatch',
                             bucketCreatedAt: new Date(),
                             bucketSyncStatus: 'ACTIVE',
                             bucketRetentionDays: 90
