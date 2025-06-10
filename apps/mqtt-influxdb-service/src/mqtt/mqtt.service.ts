@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit, Inject, Logger } from '@nestjs/common';
-import { ConfigService, ConfigType } from '@nestjs/config';
+import { ConfigType } from '@nestjs/config';
 import * as mqtt from 'mqtt';
-import { InfluxDBService, InfluxDBBucketService, PrismaService } from '@ecowatch/shared';
+import { InfluxDBService, PrismaService } from '@ecowatch/shared';
 import { mqttConfig, serviceConfig } from '../config';
 import { SensorReading, EnvironmentalData, InfluxPoint } from '@ecowatch/shared';
 
@@ -20,9 +20,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private influxDBService: InfluxDBService,
-    private influxDBBucketService: InfluxDBBucketService,
     private prismaService: PrismaService,
-    private configService: ConfigService,
     @Inject(mqttConfig.KEY)
     private readonly mqttConfigService: ConfigType<typeof mqttConfig>,
     @Inject(serviceConfig.KEY)
