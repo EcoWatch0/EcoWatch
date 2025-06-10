@@ -1,10 +1,24 @@
 import { PrismaClient, SensorType } from '@prisma/client';
+import { InfluxDB } from '@influxdata/influxdb-client';
+import { BucketsAPI } from '@influxdata/influxdb-client-apis';
 
 export class DatabaseService {
     private prisma: PrismaClient;
+    private bucketsAPI: BucketsAPI;
 
     constructor() {
         this.prisma = new PrismaClient();
+
+        // Initialiser l'API InfluxDB pour la création de buckets
+        const url = process.env.INFLUXDB_URL || 'http://localhost:8086';
+        const token = process.env.INFLUXDB_TOKEN;
+
+        if (!token) {
+            throw new Error('INFLUXDB_TOKEN environment variable is required');
+        }
+
+        const influxDB = new InfluxDB({ url, token });
+        this.bucketsAPI = new BucketsAPI(influxDB);
     }
 
     /**
@@ -36,6 +50,62 @@ export class DatabaseService {
     }
 
     /**
+ * Crée un bucket InfluxDB pour une organisation
+ */
+    private async createInfluxBucket(organizationId: string): Promise<{ success: boolean, bucketName?: string, bucketId?: string, error?: string }> {
+        try {
+            console.log(`Creating InfluxDB bucket for organization ${organizationId}`);
+
+            const bucketName = `ecowatch_org_${organizationId}`;
+            const influxOrgId = process.env.INFLUXDB_ORG || 'ecowatch';
+
+            // Vérifier si le bucket existe déjà
+            const existingBuckets = await this.bucketsAPI.getBuckets({ name: bucketName });
+            if (existingBuckets?.buckets && existingBuckets.buckets.length > 0) {
+                console.log(`Bucket ${bucketName} already exists`);
+                return {
+                    success: true,
+                    bucketName: bucketName,
+                    bucketId: existingBuckets.buckets[0].id
+                };
+            }
+
+            // Créer le bucket
+            const retentionPeriod = 90 * 24 * 60 * 60; // 90 jours en secondes
+            const bucket = await this.bucketsAPI.postBuckets({
+                body: {
+                    name: bucketName,
+                    orgID: influxOrgId,
+                    retentionRules: [{
+                        type: 'expire',
+                        everySeconds: retentionPeriod
+                    }],
+                    description: `EcoWatch data bucket for organization ${organizationId}`
+                }
+            });
+
+            if (!bucket || !bucket.id) {
+                throw new Error('Failed to create bucket - no ID returned');
+            }
+
+            console.log(`Successfully created bucket ${bucketName} with ID ${bucket.id}`);
+
+            return {
+                success: true,
+                bucketName: bucketName,
+                bucketId: bucket.id
+            };
+
+        } catch (error) {
+            console.error(`Failed to create bucket for organization ${organizationId}:`, error);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error)
+            };
+        }
+    }
+
+    /**
      * Crée des capteurs de test si aucun n'existe
      */
     async createTestSensors() {
@@ -50,20 +120,56 @@ export class DatabaseService {
             console.log('No sensors found, creating test sensors...');
 
             // Créer une organisation de test si elle n'existe pas
-            const testOrg = await this.prisma.organization.upsert({
-                where: { id: 'test-org-1' },
-                update: {},
-                create: {
-                    id: 'test-org-1',
-                    name: 'Test Organization',
-                    bucketSyncStatus: 'ACTIVE',
-                    influxBucketName: 'ecowatch_org_test-org-1',
-                    influxBucketId: 'test-bucket-id',
-                    influxOrgId: 'ecowatch',
-                    bucketRetentionDays: 90,
-                    bucketCreatedAt: new Date(),
-                }
+            let testOrg = await this.prisma.organization.findUnique({
+                where: { id: 'test-org-1' }
             });
+
+            if (!testOrg) {
+                console.log('Creating test organization...');
+
+                // Étape 1: Créer l'organisation avec statut PENDING
+                testOrg = await this.prisma.organization.create({
+                    data: {
+                        id: 'test-org-1',
+                        name: 'Test Organization',
+                        bucketSyncStatus: 'PENDING',
+                    }
+                });
+
+                // Étape 2: Créer le bucket InfluxDB via le service
+                console.log('Creating InfluxDB bucket for test organization...');
+                await this.prisma.organization.update({
+                    where: { id: testOrg.id },
+                    data: { bucketSyncStatus: 'CREATING' }
+                });
+
+                const bucketResult = await this.createInfluxBucket(testOrg.id);
+
+                if (bucketResult.success) {
+                    // Étape 3: Mettre à jour l'organisation avec les infos du bucket
+                    testOrg = await this.prisma.organization.update({
+                        where: { id: testOrg.id },
+                        data: {
+                            influxBucketName: bucketResult.bucketName,
+                            influxBucketId: bucketResult.bucketId,
+                            influxOrgId: process.env.INFLUXDB_ORG || 'ecowatch',
+                            bucketCreatedAt: new Date(),
+                            bucketSyncStatus: 'ACTIVE',
+                            bucketRetentionDays: 90
+                        }
+                    });
+                    console.log(`✅ Test organization created with active bucket: ${bucketResult.bucketName}`);
+                } else {
+                    // En cas d'erreur, marquer comme ERROR
+                    await this.prisma.organization.update({
+                        where: { id: testOrg.id },
+                        data: { bucketSyncStatus: 'ERROR' }
+                    });
+                    throw new Error(`Failed to create bucket: ${bucketResult.error}`);
+                }
+            } else {
+                console.log('Test organization already exists');
+            }
 
             // Créer plusieurs capteurs de test
             const testSensors = [
