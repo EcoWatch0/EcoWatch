@@ -4,4 +4,6 @@ export * from './prisma/prisma.service';
 export * from './influxdb/influxdb.module';
 export * from './influxdb/influxdb.service';
 export * from './influxdb/influxdb.config';
+export * from './influxdb/influxdb-bucket.interface';
+export * from './influxdb/influxdb-bucket.service';
 export * from './iterators/sensors/interfaces/sensor.interface';
