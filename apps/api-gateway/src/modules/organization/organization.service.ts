@@ -4,29 +4,22 @@ import { OrganizationInboundCreateDto, OrganizationInboundDto, OrganizationInbou
 import { plainToInstance } from 'class-transformer';
 @Injectable()
 export class OrganizationService {
-  constructor(private prisma: PrismaService, private influxDBService: InfluxDBService, private influxDBBucketService: InfluxDBBucketService) {
-    console.log(influxdbConfig());
-  }
+  constructor(
+    private prisma: PrismaService,
+    private influxDBService: InfluxDBService,
+    private influxDBBucketService: InfluxDBBucketService
+  ) { }
 
   async create(createOrganizationDto: OrganizationInboundCreateDto) {
-    // get organisation from config service
-    console.log(influxdbConfig().org);
-
     const organization = await this.prisma.organization.create({
       data: {
         ...createOrganizationDto,
       },
     });
-
-    const bucket = await this.influxDBBucketService.createBucketForOrganization(organization.id);
-    console.log(bucket);
-
+    await this.influxDBBucketService.createBucketForOrganization(organization.id);
     const updatedOrganization = await this.prisma.organization.findUnique({
       where: { id: organization.id },
     });
-
-    console.log(updatedOrganization);
-
     return plainToInstance(OrganizationInboundProperties, updatedOrganization);
   }
 

@@ -256,8 +256,6 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         }
       });
 
-      console.log(sensor);
-
       if (!sensor) {
         this.logger.error(`Sensor ${data.sensorId} not found in database`);
         return;
