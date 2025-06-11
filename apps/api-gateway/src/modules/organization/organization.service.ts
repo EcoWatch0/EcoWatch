@@ -6,7 +6,6 @@ import { plainToInstance } from 'class-transformer';
 export class OrganizationService {
   constructor(
     private prisma: PrismaService,
-    private influxDBService: InfluxDBService,
     private influxDBBucketService: InfluxDBBucketService
   ) { }
 
