@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
     BucketSyncResult,
     OrganizationBucketInfo
-} from './influxdb-bucket.interface';
+} from './interface/influxdb-bucket.interface';
 import { influxdbConfig } from './config/influxdb.config';
 
 @Injectable()
