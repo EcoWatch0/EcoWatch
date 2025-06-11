@@ -57,7 +57,7 @@ export class InfluxDBService implements OnModuleDestroy {
     });
 
     try {
-      const bucketWriteApi = this.client.getWriteApi(this.config.org, bucketName);
+      const bucketWriteApi = this.client.getWriteApi(this.config.orgId, bucketName);
       await bucketWriteApi.writePoint(point);
       await bucketWriteApi.flush();
       await bucketWriteApi.close();
@@ -67,7 +67,7 @@ export class InfluxDBService implements OnModuleDestroy {
   }
 
   async query(fluxQuery: string) {
-    const queryApi = this.client.getQueryApi(this.config.org);
+    const queryApi = this.client.getQueryApi(this.config.orgId);
     try {
       return await queryApi.collectRows(fluxQuery);
     } catch (error) {
