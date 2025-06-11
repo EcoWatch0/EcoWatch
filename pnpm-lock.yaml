@@ -78,6 +78,9 @@ importers:
       '@nestjs/common':
         specifier: ^11.0.12
         version: 11.0.12(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/config':
+        specifier: ^4.0.0
+        version: 4.0.2(@nestjs/common@11.0.12(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(rxjs@7.8.2)
       '@nestjs/core':
         specifier: ^11.0.14
         version: 11.0.14(@nestjs/common@11.0.12(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/microservices@11.0.13)(@nestjs/platform-express@11.0.12)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -136,6 +139,18 @@ importers:
 
   apps/data-simulator:
     dependencies:
+      '@ecowatch/shared':
+        specifier: workspace:*
+        version: link:../../libs/shared
+      '@influxdata/influxdb-client':
+        specifier: ^1.35.0
+        version: 1.35.0
+      '@influxdata/influxdb-client-apis':
+        specifier: ^1.35.0
+        version: 1.35.0(@influxdata/influxdb-client@1.35.0)
+      '@prisma/client':
+        specifier: ^6.1.0
+        version: 6.5.0(prisma@6.5.0(typescript@5.8.3))(typescript@5.8.3)
       '@types/node':
         specifier: ^22.15.3
         version: 22.15.3
@@ -312,6 +327,9 @@ importers:
       '@influxdata/influxdb-client':
         specifier: ^1.35.0
         version: 1.35.0
+      '@influxdata/influxdb-client-apis':
+        specifier: ^1.35.0
+        version: 1.35.0(@influxdata/influxdb-client@1.35.0)
       '@nestjs/common':
         specifier: ^11.0.12
         version: 11.0.12(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -895,6 +913,11 @@ packages:
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [x64]
     os: [win32]
+
+  '@influxdata/influxdb-client-apis@1.35.0':
+    resolution: {integrity: sha512-+7h6smVPHYBge2rNKgYh/5k+SriYvPMsoJDfbUiQt1vJtpWnElwgBDLDl7Cr6d9XPC+FCI9GP4GQEMv7y8WxdA==}
+    peerDependencies:
+      '@influxdata/influxdb-client': '*'
 
   '@influxdata/influxdb-client@1.35.0':
     resolution: {integrity: sha512-woWMi8PDpPQpvTsRaUw4Ig+nOGS/CWwAwS66Fa1Vr/EkW+NEwxI8YfPBsdBMn33jK2Y86/qMiiuX/ROHIkJLTw==}
@@ -5956,6 +5979,10 @@ snapshots:
 
   '@img/sharp-win32-x64@0.33.5':
     optional: true
+
+  '@influxdata/influxdb-client-apis@1.35.0(@influxdata/influxdb-client@1.35.0)':
+    dependencies:
+      '@influxdata/influxdb-client': 1.35.0
 
   '@influxdata/influxdb-client@1.35.0': {}
 
