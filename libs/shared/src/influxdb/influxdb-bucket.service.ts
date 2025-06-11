@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { BucketsAPI, OrgsAPI, Bucket } from '@influxdata/influxdb-client-apis';
 import { InfluxDB } from '@influxdata/influxdb-client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,7 +7,6 @@ import {
     OrganizationBucketInfo
 } from './interface/influxdb-bucket.interface';
 import { influxdbConfig } from './config/influxdb.config';
-import { ConfigType } from '@nestjs/config';
 
 @Injectable()
 export class InfluxDBBucketService {
