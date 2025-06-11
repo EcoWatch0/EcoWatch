@@ -13,7 +13,6 @@ export class InfluxDBService implements OnModuleDestroy {
     @Inject(influxdbConfig.KEY)
     private config: ConfigType<typeof influxdbConfig>,
   ) {
-    // Log configuration for debugging (masking the token partially)
     const maskedToken = this.config.token
       ? `${this.config.token.substring(0, 5)}...${this.config.token.length > 10 ? this.config.token.substring(this.config.token.length - 5) : ''}`
       : 'NOT SET';
@@ -28,35 +27,12 @@ export class InfluxDBService implements OnModuleDestroy {
     this.writeApi = this.client.getWriteApi(config.org, config.bucket);
   }
 
-  async writePoint(measurement: string, tags: Record<string, string>, fields: Record<string, any>) {
-    const point = new Point(measurement);
-
-    // Ajout des tags
-    Object.entries(tags).forEach(([key, value]) => {
-      point.tag(key, value);
-    });
-
-    // Ajout des champs
-    Object.entries(fields).forEach(([key, value]) => {
-      if (typeof value === 'number') {
-        point.floatField(key, value);
-      } else if (typeof value === 'boolean') {
-        point.booleanField(key, value);
-      } else {
-        point.stringField(key, String(value));
-      }
-    });
-
-    try {
-      await this.writeApi.writePoint(point);
-      await this.writeApi.flush();
-    } catch (error) {
-      throw new Error(`Failed to write to InfluxDB: ${error.message}`);
-    }
-  }
-
   /**
-   * 🔄 NOUVEAU: Écrit un point dans un bucket spécifique
+   * Write a point to a specific bucket
+   * @param measurement - The measurement of the point
+   * @param tags - The tags of the point
+   * @param fields - The fields of the point
+   * @param bucketName - The name of the bucket to write to
    */
   async writePointToBucket(
     measurement: string,
@@ -66,12 +42,10 @@ export class InfluxDBService implements OnModuleDestroy {
   ) {
     const point = new Point(measurement);
 
-    // Ajout des tags
     Object.entries(tags).forEach(([key, value]) => {
       point.tag(key, value);
     });
 
-    // Ajout des champs
     Object.entries(fields).forEach(([key, value]) => {
       if (typeof value === 'number') {
         point.floatField(key, value);
@@ -83,7 +57,6 @@ export class InfluxDBService implements OnModuleDestroy {
     });
 
     try {
-      // Créer un writeApi spécifique pour ce bucket
       const bucketWriteApi = this.client.getWriteApi(this.config.org, bucketName);
       await bucketWriteApi.writePoint(point);
       await bucketWriteApi.flush();
