@@ -41,10 +41,9 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
    * @returns void
    */
   private async flushAllBuffers() {
-    if (this.dataBuffer.size === 0) return;
-
     try {
-      this.logger.log(`Flushing ${this.dataBuffer.size} bucket buffers to InfluxDB`);
+      const totalPoints = Array.from(this.dataBuffer.values()).reduce((sum, points) => sum + points.length, 0);
+      this.logger.log(`Flushing ${totalPoints} points to InfluxDB`);
 
       for (const [bucketName, points] of this.dataBuffer.entries()) {
         if (points.length === 0) continue;

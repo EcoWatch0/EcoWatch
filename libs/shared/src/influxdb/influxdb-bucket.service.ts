@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { BucketsAPI, OrgsAPI, Bucket } from '@influxdata/influxdb-client-apis';
 import { InfluxDB } from '@influxdata/influxdb-client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,6 +7,7 @@ import {
     OrganizationBucketInfo
 } from './interface/influxdb-bucket.interface';
 import { influxdbConfig } from './config/influxdb.config';
+import { ConfigType } from '@nestjs/config';
 
 @Injectable()
 export class InfluxDBBucketService {
@@ -15,16 +16,9 @@ export class InfluxDBBucketService {
     private orgsAPI: OrgsAPI;
 
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly prisma: PrismaService
     ) {
-        const url = process.env.INFLUXDB_URL || 'http://localhost:8086';
-        const token = process.env.INFLUXDB_TOKEN;
-
-        if (!token) {
-            throw new Error('INFLUXDB_TOKEN environment variable is required');
-        }
-
-        const influxDB = new InfluxDB({ url, token });
+        const influxDB = new InfluxDB({ url: influxdbConfig().url, token: influxdbConfig().token });
         this.bucketsAPI = new BucketsAPI(influxDB);
         this.orgsAPI = new OrgsAPI(influxDB);
     }
