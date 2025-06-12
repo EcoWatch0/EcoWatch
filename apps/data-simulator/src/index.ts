@@ -1,10 +1,10 @@
 import { DataSimulator } from './simulator';
 import { MqttPublisher } from './mqtt-client';
-import { config } from './config';
+import { dataFakerConfig } from '@ecowatch/shared/src/config/data-faker.config';
 
 async function startSimulator() {
   console.log('EcoWatch Data Simulator Starting...');
-  console.log(`Configuration: interval: ${config.simulation.intervalMs}ms`);
+  console.log(`Configuration: interval: ${dataFakerConfig().intervalMs}ms`);
 
   // Créer les instances
   const simulator = new DataSimulator();
@@ -61,11 +61,11 @@ async function startSimulator() {
     });
 
     // Démarrer la simulation
-    console.log(`Starting simulation cycle every ${config.simulation.intervalMs}ms`);
+    console.log(`Starting simulation cycle every ${dataFakerConfig().intervalMs}ms`);
     generateAndPublish(); // Exécuter immédiatement une première fois
 
     // Variable pour stocker l'identifiant de l'intervalle
-    const intervalId = setInterval(generateAndPublish, config.simulation.intervalMs);
+    const intervalId = setInterval(generateAndPublish, dataFakerConfig().intervalMs);
 
     console.log('EcoWatch Data Simulator running. Press Ctrl+C to stop.');
 

@@ -4,19 +4,20 @@ import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
 import { UserInboundCreateDto, UserInboundDto, UserInboundProperties } from './dto/user-inbound.dto';
 import { UserRole } from '@prisma/client';
+import { UsersService } from '@ecowatch/shared/src/interactors/users/users.service';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private usersService: UsersService) { }
 
   async create(createUserDto: UserInboundCreateDto) {
     if (!createUserDto.password) {
       throw new Error('Password is required');
     }
-    
+
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    
-    const user = await this.prisma.user.create({
+
+    const user = await this.usersService.create({
       data: {
         ...createUserDto,
         password: hashedPassword,
@@ -28,12 +29,16 @@ export class UserService {
   }
 
   async findAll() {
-    const users = await this.prisma.user.findMany();
+    const users = await this.usersService.findMany({
+      where: {
+        role: UserRole.USER,
+      },
+    });
     return plainToInstance(UserInboundProperties, users);
   }
 
   async findOne(id: string) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.usersService.findOne({
       where: { id },
     });
 
@@ -49,7 +54,7 @@ export class UserService {
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
     }
 
-    const updatedUser = await this.prisma.user.update({
+    const updatedUser = await this.usersService.update({
       where: { id },
       data: updateUserDto,
     });
@@ -59,9 +64,9 @@ export class UserService {
 
   async remove(id: string) {
     await this.findOne(id);
-    const deletedUser = await this.prisma.user.delete({
+    const deletedUser = await this.usersService.delete({
       where: { id },
     });
     return plainToInstance(UserInboundProperties, deletedUser);
   }
-} 
+}
