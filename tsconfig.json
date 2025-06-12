@@ -17,8 +17,22 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "@ecowatch/shared": [
+        "libs/shared/src/"
+      ],
+      "@ecowatch/shared/*": [
+        "libs/shared/src/*"
+      ],
+    }
   },
-  "include": ["apps/**/*", "libs/**/*"],
-  "exclude": ["**/dist", "**/node_modules"]
+  "include": [
+    "apps/**/*",
+    "libs/**/*"
+  ],
+  "exclude": [
+    "**/dist",
+    "**/node_modules"
+  ],
 }
