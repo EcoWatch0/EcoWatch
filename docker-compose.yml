@@ -16,6 +16,9 @@ services:
     networks:
       - ecowatch-network
     depends_on:
+      - rabbitmq
+      - influxdb
+      - redis
       - db
 
   web:
@@ -69,18 +72,22 @@ services:
     networks:
       - ecowatch-network
 
-  mqtt:
-    image: eclipse-mosquitto:2
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: ecowatch-rabbitmq
     ports:
-      - "1883:1883"  # MQTT standard port
-      - "9001:9001"  # WebSockets port
+      - "1883:1883" # MQTT
+      - "5672:5672" # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
     volumes:
-      - mqtt_data:/mosquitto/data
-      - mqtt_log:/mosquitto/log
-      - ./mosquitto/config:/mosquitto/config
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
     networks:
       - ecowatch-network
-      
+
   data-simulator:
     build:
       context: .
@@ -88,21 +95,22 @@ services:
     image: code0ex/ecowatch-data-simulator:latest
     environment:
       - NODE_ENV=production
-      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - MQTT_BROKER_URL=mqtt://rabbitmq:1883
       - MQTT_CLIENT_ID=eco-watch-data-simulator
       - SIMULATION_INTERVAL_MS=5000
       - SENSORS_COUNT=5
     depends_on:
-      - mqtt
+      - rabbitmq
     networks:
       - ecowatch-network
     restart: unless-stopped
-    
+
   mqtt-influxdb-service:
     build:
-      context: ./apps/mqtt-influxdb-service
+      context: .
+      target: runner-mqtt-influxdb-service
       dockerfile: Dockerfile
-    image: code0ex/ecowatch-mqtt-influxdb:latest
+    image: code0ex/ecowatch-data-influxdb:latest
     ports:
       - "3200:3200"
     environment:
@@ -115,7 +123,7 @@ services:
       - INFLUXDB_ORG=${INFLUXDB_ORG}
       - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
     depends_on:
-      - mqtt
+      - rabbitmq
       - influxdb
     networks:
       - ecowatch-network
@@ -131,3 +139,4 @@ volumes:
   influxdb_data:
   mqtt_data:
   mqtt_log:
+  rabbitmq_data:
