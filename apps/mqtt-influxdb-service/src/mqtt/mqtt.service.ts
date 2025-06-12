@@ -34,6 +34,25 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.logger.log('Initializing MQTT service with multi-tenant bucket support');
     this.connectToMqtt();
+    this.startProcessingTimer();
+  }
+
+  /**
+   * Start the processing timer to flush buffers periodically
+   */
+  private startProcessingTimer() {
+    if (this.processingTimer) {
+      clearInterval(this.processingTimer);
+    }
+
+    this.processingTimer = setInterval(async () => {
+      if (this.dataBuffer.size > 0) {
+        this.logger.debug('Timer-triggered buffer flush');
+        await this.flushAllBuffers();
+      }
+    }, this.BATCH_INTERVAL);
+
+    this.logger.log(`Processing timer started with interval: ${this.BATCH_INTERVAL}ms`);
   }
 
   /**
