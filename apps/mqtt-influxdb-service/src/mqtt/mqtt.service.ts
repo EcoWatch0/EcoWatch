@@ -47,7 +47,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
 
     this.processingTimer = setInterval(async () => {
       if (this.dataBuffer.size > 0) {
-        this.logger.error('Timer-triggered buffer flush');
+        this.logger.debug('Timer-triggered buffer flush');
         await this.flushAllBuffers();
       }
     }, this.BATCH_INTERVAL);
