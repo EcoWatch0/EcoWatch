@@ -174,14 +174,6 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
           }
 
           await this.processEnvironmentalData(data);
-          // TODO: send ack to mqtt broker
-          // this.client.publish(topic, 'ack', { qos: 1 }, (err) => {
-          //   if (err) {
-          //     this.logger.error(`Error sending ack to topic ${topic}: ${err.message}`);
-          //   } else {
-          //     this.logger.log(`Ack sent to topic: ${topic}`);
-          //   }
-          // });
         } catch (parseError) {
           this.logger.error(`Error parsing message: ${parseError.message}`);
         }
