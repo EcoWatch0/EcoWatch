@@ -2,28 +2,30 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InfluxDBBucketService, PrismaService } from '@ecowatch/shared';
 import { OrganizationInboundCreateDto, OrganizationInboundDto, OrganizationInboundProperties } from './dto/organization-inbound.dto';
 import { plainToInstance } from 'class-transformer';
+import { OrganisationsService } from '@ecowatch/shared/src/interactors/organisations/organisations.service';
+
 @Injectable()
 export class OrganizationService {
   constructor(
-    private prisma: PrismaService,
+    private organisationsService: OrganisationsService,
     private influxDBBucketService: InfluxDBBucketService
   ) { }
 
   async create(createOrganizationDto: OrganizationInboundCreateDto) {
-    const organization = await this.prisma.organization.create({
+    const organization = await this.organisationsService.create({
       data: {
         ...createOrganizationDto,
       },
     });
     await this.influxDBBucketService.createBucketForOrganization(organization.id);
-    const updatedOrganization = await this.prisma.organization.findUnique({
+    const updatedOrganization = await this.organisationsService.findOne({
       where: { id: organization.id },
     });
     return plainToInstance(OrganizationInboundProperties, updatedOrganization);
   }
 
   async findAll() {
-    const organizations = await this.prisma.organization.findMany({
+    const organizations = await this.organisationsService.findMany({
       include: {
         memberships: {
           include: {
@@ -36,7 +38,7 @@ export class OrganizationService {
   }
 
   async findOne(id: string) {
-    const organization = await this.prisma.organization.findUnique({
+    const organization = await this.organisationsService.findOne({
       where: { id },
       include: {
         memberships: {
@@ -56,7 +58,7 @@ export class OrganizationService {
 
   async update(id: string, updateOrganizationDto: OrganizationInboundDto) {
     await this.findOne(id);
-    const updatedOrganization = await this.prisma.organization.update({
+    const updatedOrganization = await this.organisationsService.update({
       where: { id },
       data: updateOrganizationDto,
     });
@@ -66,7 +68,7 @@ export class OrganizationService {
 
   async remove(id: string) {
     await this.findOne(id);
-    const deletedOrganization = await this.prisma.organization.delete({
+    const deletedOrganization = await this.organisationsService.delete({
       where: { id },
     });
     return plainToInstance(OrganizationInboundProperties, deletedOrganization);

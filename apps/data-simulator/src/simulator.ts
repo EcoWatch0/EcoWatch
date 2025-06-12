@@ -1,6 +1,6 @@
 import { SensorReading, EnvironmentalData, DatabaseSensor } from './types';
 import { DatabaseService } from './database.service';
-import { config } from './config';
+import { dataFakerConfig } from '@ecowatch/shared/src/config/data-faker.config';
 
 // Generation des données aléatoires
 export class DataSimulator {
@@ -81,7 +81,7 @@ export class DataSimulator {
       batteryLevel: this.randomInRange(10, 100),
       metadata: {
         accuracy: this.randomInRange(90, 99),
-        readingInterval: config.simulation.intervalMs,
+        readingInterval: dataFakerConfig().intervalMs,
         sensorName: sensor.name,
         organizationId: sensor.organizationId
       }

@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, Inject, Logger } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { InfluxDB, Point, WriteApi } from '@influxdata/influxdb-client';
-import { influxdbConfig } from './config/influxdb.config';
+import { influxdbConfig } from '../../config/influxdb.config';
 
 @Injectable()
 export class InfluxDBService implements OnModuleDestroy {
