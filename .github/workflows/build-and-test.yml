@@ -2,7 +2,8 @@ name: Build and Test
 
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches: [ main, develop]
+    branches-ignore: [ feature/* ]
   pull_request:
     branches: [ main, develop, feature/* ]
 
@@ -138,7 +139,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install dependencies (relink)
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
 
       - name: Generate Prisma Client
