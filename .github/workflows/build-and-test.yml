@@ -42,20 +42,11 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
       - name: Generate Prisma Client
         run: pnpm prisma generate
         env:
           DATABASE_URL: postgresql://ecowatch:ecowatch_password@localhost:5432/ecowatch
-      - name: Upload node_modules and node_modules
-        uses: actions/upload-artifact@v4
-        with:
-          name: node_modules
-          path: |
-            node_modules/**
-            apps/**/node_modules
-            libs/**/node_modules
-            shared/**/node_modules
             
 
   #########################################################
@@ -72,11 +63,6 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Download node_modules
-        uses: actions/download-artifact@v4
-        with:
-          name: node_modules
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
@@ -89,6 +75,9 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies (relink)
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
 
       - name: Lint
         run: pnpm lint
@@ -115,10 +104,9 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Download node_modules
-        uses: actions/download-artifact@v4
-        with:
-          name: node_modules
+      - name: Install dependencies (relink)
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
+
       - name: Security
         run: pnpm security
       - name: Upload security report
@@ -154,10 +142,9 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Download node_modules
-        uses: actions/download-artifact@v4
-        with:
-          name: node_modules
+      - name: Install dependencies (relink)
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
+
       - name: Build
         run: pnpm build
 
@@ -219,10 +206,8 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Download node_modules
-        uses: actions/download-artifact@v4
-        with:
-          name: node_modules
+      - name: Install dependencies (relink)
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
 
       - name: Test api-gateway
         run: pnpm --filter api-gateway test
