@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '@ecowatch/shared/src/interactors/users/users.service';
+import { UsersService } from '@ecowatch/shared';
 
 @Injectable()
 export class AuthService {

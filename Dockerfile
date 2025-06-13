@@ -21,8 +21,8 @@ RUN pnpm install
 COPY . .
 
 # Build des applications
-RUN pnpm --filter shared build
 RUN pnpm prisma generate
+RUN pnpm --filter shared build
 RUN pnpm --filter api-gateway build
 RUN pnpm --filter web build
 RUN pnpm --filter data-simulator build
