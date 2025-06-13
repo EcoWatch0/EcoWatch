@@ -1,5 +1,5 @@
 import mqtt, { MqttClient } from 'mqtt';
-import { mqttConfig } from '@ecowatch/shared/src/config/mqtt.config';
+import { mqttConfig } from '@ecowatch/shared';
 import { EnvironmentalData } from './types';
 
 export class MqttPublisher {

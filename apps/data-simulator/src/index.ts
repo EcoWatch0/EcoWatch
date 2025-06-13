@@ -1,9 +1,6 @@
 import { DataSimulator } from './simulator';
 import { MqttPublisher } from './mqtt-client';
-import { dataFakerConfig } from '@ecowatch/shared/src/config/data-faker.config';
-import { OrganisationsService } from '@ecowatch/shared/src/interactors/organisations/organisations.service';
-import { SensorsService } from '@ecowatch/shared/src/interactors/sensors/sensors.service';
-import { PrismaService } from '@ecowatch/shared/src/service/prisma/prisma.service';
+import { OrganisationsService, SensorsService, PrismaService, dataFakerConfig } from '@ecowatch/shared';
 import { DatabaseService } from './database.service';
 
 async function startSimulator() {

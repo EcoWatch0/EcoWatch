@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MqttService } from './mqtt.service';
-import { PrismaModule } from '@ecowatch/shared/src/service/prisma/prisma.module';
-import { InfluxDBModule } from '@ecowatch/shared/src/service/influxdb/influxdb.module';
+import { PrismaModule, InfluxDBModule, SensorsModule } from '@ecowatch/shared';
 import { mqttConfig, serviceConfig } from 'src/config';
 
 @Module({
@@ -11,6 +10,7 @@ import { mqttConfig, serviceConfig } from 'src/config';
     ConfigModule.forFeature(serviceConfig),
     InfluxDBModule,
     PrismaModule,
+    SensorsModule,
   ],
   providers: [MqttService],
   exports: [MqttService],

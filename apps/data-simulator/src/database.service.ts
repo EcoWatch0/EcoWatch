@@ -1,9 +1,8 @@
 import { SensorType } from '@prisma/client';
 import { InfluxDB } from '@influxdata/influxdb-client';
 import { BucketsAPI } from '@influxdata/influxdb-client-apis';
-import { influxdbConfig } from '@ecowatch/shared/src/config/influxdb.config';
-import { OrganisationsService } from '@ecowatch/shared/src/interactors/organisations/organisations.service';
-import { SensorsService } from '@ecowatch/shared/src/interactors/sensors/sensors.service';
+import { influxdbConfig } from '@ecowatch/shared';
+import { OrganisationsService, SensorsService } from '@ecowatch/shared';
 import { DatabaseSensor } from './types';
 
 export class DatabaseService {

@@ -1,10 +1,8 @@
 import { Injectable, OnModuleDestroy, OnModuleInit, Inject, Logger } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import * as mqtt from 'mqtt';
-import { InfluxDBService } from '@ecowatch/shared/src/service/influxdb/influxdb.service';
-import { PrismaService } from '@ecowatch/shared/src/service/prisma/prisma.service';
+import { InfluxDBService, PrismaService, SensorReading, EnvironmentalData, InfluxPoint } from '@ecowatch/shared';
 import { mqttConfig, serviceConfig } from '../config';
-import { SensorReading, EnvironmentalData, InfluxPoint } from '@ecowatch/shared/src/interactors/sensors/interfaces/sensor.interface';
 
 @Injectable()
 export class MqttService implements OnModuleInit, OnModuleDestroy {
