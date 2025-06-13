@@ -108,7 +108,7 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
 
       - name: Security
-        run: pnpm audit --groups=dependencies --level=high --recursive --format=table
+        run: pnpm audit
 
       - name: Upload security report
         uses: actions/upload-artifact@v4

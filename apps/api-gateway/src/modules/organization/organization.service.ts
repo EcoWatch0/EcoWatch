@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InfluxDBBucketService } from '@ecowatch/shared';
+import { InfluxDBBucketService } from '@ecowatch/shared/src/service/influxdb/influxdb-bucket.service';
 import { OrganizationInboundCreateDto, OrganizationInboundDto, OrganizationInboundProperties } from './dto/organization-inbound.dto';
 import { plainToInstance } from 'class-transformer';
 import { OrganisationsService } from '@ecowatch/shared/src/interactors/organisations/organisations.service';
