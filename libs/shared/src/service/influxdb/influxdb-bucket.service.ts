@@ -6,7 +6,7 @@ import {
     BucketSyncResult,
     OrganizationBucketInfo
 } from './interface/influxdb-bucket.interface';
-import { influxdbConfig } from './config/influxdb.config';
+import { influxdbConfig } from '../../config/influxdb.config';
 
 @Injectable()
 export class InfluxDBBucketService {

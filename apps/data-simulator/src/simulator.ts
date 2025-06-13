@@ -1,15 +1,14 @@
 import { SensorReading, EnvironmentalData, DatabaseSensor } from './types';
 import { DatabaseService } from './database.service';
-import { config } from './config';
+import { dataFakerConfig } from '@ecowatch/shared/src/config/data-faker.config';
 
 // Generation des données aléatoires
 export class DataSimulator {
   private sensors: DatabaseSensor[] = [];
-  private databaseService: DatabaseService;
 
-  constructor() {
-    this.databaseService = new DatabaseService();
-  }
+  constructor(
+    private databaseService: DatabaseService,
+  ) { }
 
   /**
    * Initialise les capteurs depuis la base de données
@@ -22,6 +21,7 @@ export class DataSimulator {
 
     // Récupérer les capteurs actifs
     this.sensors = await this.databaseService.getActiveSensors();
+
 
     console.log(`Found ${this.sensors.length} active sensors`);
     this.sensors.forEach(sensor => {
@@ -81,7 +81,7 @@ export class DataSimulator {
       batteryLevel: this.randomInRange(10, 100),
       metadata: {
         accuracy: this.randomInRange(90, 99),
-        readingInterval: config.simulation.intervalMs,
+        readingInterval: dataFakerConfig().intervalMs,
         sensorName: sensor.name,
         organizationId: sensor.organizationId
       }
@@ -125,11 +125,6 @@ export class DataSimulator {
       organization: sensor.organization.name,
       bucketStatus: sensor.organization.bucketSyncStatus
     }));
-  }
-
-  // Nettoyer les ressources
-  async cleanup() {
-    await this.databaseService.disconnect();
   }
 
   // Utilitaire pour générer un nombre aléatoire dans une plage
