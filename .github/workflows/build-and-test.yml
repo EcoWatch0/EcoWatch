@@ -45,7 +45,7 @@ jobs:
         run: pnpm prisma generate
         env:
           DATABASE_URL: postgresql://ecowatch:ecowatch_password@localhost:5432/ecowatch
-      - name: Upload dist and node_modules
+      - name: Upload node_modules and node_modules
         uses: actions/upload-artifact@v4
         with:
           name: node_modules
@@ -54,6 +54,7 @@ jobs:
             apps/**/node_modules
             libs/**/node_modules
             shared/**/node_modules
+            
 
   #########################################################
   # 2- Lint
@@ -75,10 +76,10 @@ jobs:
           version: 8
           run_install: false
 
-      - name: Download dist
+      - name: Download node_modules
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: node_modules
       - name: Lint
         run: pnpm lint
 
@@ -102,10 +103,10 @@ jobs:
           version: 8
           run_install: false
 
-      - name: Download dist
+      - name: Download node_modules
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: node_modules
       - name: Security
         run: pnpm security
       - name: Upload security report
@@ -139,10 +140,10 @@ jobs:
           version: 8
           run_install: false
 
-      - name: Download dist
+      - name: Download node_modules
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: node_modules
       - name: Build
         run: pnpm build
 
@@ -202,10 +203,10 @@ jobs:
           version: 8
           run_install: false
 
-      - name: Download dist
+      - name: Download node_modules
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: node_modules
 
       - name: Test api-gateway
         run: pnpm --filter api-gateway test
