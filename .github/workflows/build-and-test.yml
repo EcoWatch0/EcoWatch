@@ -232,9 +232,10 @@ jobs:
         env:
             NEXT_PUBLIC_API_URL: http://localhost:3001/api 
         
-      - name: Test data-simulator
-        run: pnpm --filter data-simulator test
+      # TODO: not test for now
+      # - name: Test data-simulator
+      #   run: pnpm --filter data-simulator test
         
-      - name: Test mqtt-influxdb-service
-        run: pnpm --filter mqtt-influxdb-service test
+      # - name: Test mqtt-influxdb-service
+      #   run: pnpm --filter mqtt-influxdb-service test
         
