@@ -2,10 +2,9 @@ name: Build and Test
 
 on:
   push:
-    branches: [ main, develop]
-    branches-ignore: [ feature/* ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop, feature/* ]
+    branches: [ '**' ]
 
 jobs:
   #########################################################
