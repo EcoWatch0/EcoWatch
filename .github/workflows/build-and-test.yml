@@ -48,11 +48,8 @@ jobs:
       - name: Upload dist and node_modules
         uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: node_modules
           path: |
-            apps/**/dist
-            libs/**/dist
-            shared/**/dist
             node_modules/**
             apps/**/node_modules
             libs/**/node_modules
