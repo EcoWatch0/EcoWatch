@@ -1,13 +1,25 @@
 import { DataSimulator } from './simulator';
 import { MqttPublisher } from './mqtt-client';
-import { config } from './config';
+import { dataFakerConfig } from '@ecowatch/shared/src/config/data-faker.config';
+import { OrganisationsService } from '@ecowatch/shared/src/interactors/organisations/organisations.service';
+import { SensorsService } from '@ecowatch/shared/src/interactors/sensors/sensors.service';
+import { PrismaService } from '@ecowatch/shared/src/service/prisma/prisma.service';
+import { DatabaseService } from './database.service';
 
 async function startSimulator() {
   console.log('EcoWatch Data Simulator Starting...');
-  console.log(`Configuration: interval: ${config.simulation.intervalMs}ms`);
+  console.log(`Configuration: interval: ${dataFakerConfig().intervalMs}ms`);
+
+  const organisationsService = new OrganisationsService(new PrismaService());
+  const sensorsService = new SensorsService(new PrismaService());
 
   // Créer les instances
-  const simulator = new DataSimulator();
+  const simulator = new DataSimulator(
+    new DatabaseService(
+      organisationsService,
+      sensorsService,
+    ),
+  );
   const publisher = new MqttPublisher();
 
   try {
@@ -53,25 +65,21 @@ async function startSimulator() {
       // Fermer la connexion MQTT
       await publisher.close();
 
-      // Nettoyer les ressources du simulateur
-      await simulator.cleanup();
-
       console.log('EcoWatch Data Simulator stopped.');
       process.exit(0);
     });
 
     // Démarrer la simulation
-    console.log(`Starting simulation cycle every ${config.simulation.intervalMs}ms`);
+    console.log(`Starting simulation cycle every ${dataFakerConfig().intervalMs}ms`);
     generateAndPublish(); // Exécuter immédiatement une première fois
 
     // Variable pour stocker l'identifiant de l'intervalle
-    const intervalId = setInterval(generateAndPublish, config.simulation.intervalMs);
+    const intervalId = setInterval(generateAndPublish, dataFakerConfig().intervalMs);
 
     console.log('EcoWatch Data Simulator running. Press Ctrl+C to stop.');
 
   } catch (error) {
     console.error('Failed to start simulator:', error);
-    await simulator.cleanup();
     process.exit(1);
   }
 }

@@ -1,5 +1,5 @@
 import mqtt, { MqttClient } from 'mqtt';
-import { config } from './config';
+import { mqttConfig } from '@ecowatch/shared/src/config/mqtt.config';
 import { EnvironmentalData } from './types';
 
 export class MqttPublisher {
@@ -11,21 +11,21 @@ export class MqttPublisher {
   }
 
   private setupClient(): void {
-    console.log(`Connecting to MQTT broker at ${config.mqtt.brokerUrl}...`);
+    console.log(`Connecting to MQTT broker at ${mqttConfig().brokerUrl}...`);
 
     const options: mqtt.IClientOptions = {
-      clientId: config.mqtt.clientId,
+      clientId: mqttConfig().clientId,
       clean: true,
       reconnectPeriod: 5000,
     };
 
     // Ajouter les identifiants si fournis
-    if (config.mqtt.username && config.mqtt.password) {
-      options.username = config.mqtt.username;
-      options.password = config.mqtt.password;
+    if (mqttConfig().username && mqttConfig().password) {
+      options.username = mqttConfig().username;
+      options.password = mqttConfig().password;
     }
 
-    this.client = mqtt.connect(config.mqtt.brokerUrl, options);
+    this.client = mqtt.connect(mqttConfig().brokerUrl, options);
 
     this.client.on('connect', () => {
       this.connected = true;

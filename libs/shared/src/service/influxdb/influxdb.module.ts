@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { InfluxDBService } from './influxdb.service';
 import { InfluxDBBucketService } from './influxdb-bucket.service';
-import { influxdbConfig } from './config/influxdb.config';
+import { influxdbConfig } from '../../config/influxdb.config';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({

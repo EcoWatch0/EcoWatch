@@ -1,9 +1,9 @@
 export const VERSION = '1.0.0';
-export * from './prisma/prisma.module';
-export * from './prisma/prisma.service';
-export * from './influxdb/influxdb.module';
-export * from './influxdb/influxdb.service';
-export * from './influxdb/config/influxdb.config';
-export * from './influxdb/interface/influxdb-bucket.interface';
-export * from './influxdb/influxdb-bucket.service';
-export * from './iterators/sensors/interfaces/sensor.interface';
+export * from './service/prisma/prisma.module';
+export * from './service/prisma/prisma.service';
+export * from './service/influxdb/influxdb.module';
+export * from './service/influxdb/influxdb.service';
+export * from './config/influxdb.config';
+export * from './service/influxdb/interface/influxdb-bucket.interface';
+export * from './service/influxdb/influxdb-bucket.service';
+export * from './interactors/sensors/interfaces/sensor.interface';
