@@ -1,0 +1,140 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop, feature/* ]
+
+jobs:
+  # setup
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      - name: Install dependencies
+        run: pnpm install
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+        env:
+          DATABASE_URL: postgresql://ecowatch:ecowatch_password@localhost:5432/ecowatch
+
+  # lint
+  lint:
+    needs: [setup]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lint
+        run: pnpm lint
+
+  # security
+  security:
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Security
+        run: pnpm security
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: security-report.txt
+      - name: Download security report
+        uses: actions/download-artifact@v4
+        with:
+          name: security-report
+          path: security-report.txt
+
+  # build
+  build:
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build
+        run: pnpm build
+
+  # test 
+  test:
+    needs: [build]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ecowatch
+          POSTGRES_PASSWORD: ecowatch_password
+          POSTGRES_DB: ecowatch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      influxdb:
+        image: influxdb:2.7-alpine
+        env:
+          DOCKER_INFLUXDB_INIT_MODE: setup
+          DOCKER_INFLUXDB_INIT_USERNAME: admin
+          DOCKER_INFLUXDB_INIT_PASSWORD: ecowatch_password
+          DOCKER_INFLUXDB_INIT_ORG: ecowatch
+          DOCKER_INFLUXDB_INIT_BUCKET: ecowatch
+          DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: your_token_here
+        ports:
+          - 8086:8086
+    steps:
+        - name: Test api-gateway
+          run: pnpm --filter api-gateway test
+          env:
+            API_PORT: 3001
+            FRONTEND_URL: http://localhost:3000
+            POSTGRES_HOST: localhost
+            POSTGRES_PORT: 5432
+            POSTGRES_USER: ecowatch
+            POSTGRES_PASSWORD: ecowatch_password
+            POSTGRES_DB: ecowatch
+            REDIS_HOST: localhost
+            REDIS_PORT: 6379
+            INFLUXDB_URL: http://localhost:8086
+            INFLUXDB_TOKEN: your_token_here
+            INFLUXDB_ORG: ecowatch
+            INFLUXDB_BUCKET: ecowatch
+
+        - name: Test web
+          run: pnpm --filter web test
+          env:
+            NEXT_PUBLIC_API_URL: http://localhost:3001/api 
+        
+        - name: Test data-simulator
+          run: pnpm --filter data-simulator test
+        
+        - name: Test mqtt-influxdb-service
+          run: pnpm --filter mqtt-influxdb-service test
+        
