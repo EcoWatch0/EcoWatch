@@ -3,7 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
 import { UserInboundCreateDto, UserInboundDto, UserInboundProperties } from './dto/user-inbound.dto';
 import { UserRole } from '@prisma/client';
-import { UsersService } from '@ecowatch/shared/src/interactors/users/users.service';
+import { UsersService } from '@ecowatch/shared';
 
 @Injectable()
 export class UserService {

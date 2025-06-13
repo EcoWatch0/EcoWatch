@@ -1,6 +1,6 @@
 import { SensorReading, EnvironmentalData, DatabaseSensor } from './types';
 import { DatabaseService } from './database.service';
-import { dataFakerConfig } from '@ecowatch/shared/src/config/data-faker.config';
+import { dataFakerConfig } from '@ecowatch/shared';
 
 // Generation des données aléatoires
 export class DataSimulator {
