@@ -41,4 +41,10 @@ export class UsersService {
   async findUnique<T extends Prisma.UserFindUniqueArgs>(args: T) {
     return this.prismaService.user.findUnique(args);
   }
+
+  async getUserByEmail(email: string) {
+    return this.prismaService.user.findUnique({
+      where: { email },
+    });
+  }
 }
