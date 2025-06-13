@@ -76,7 +76,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install dependencies (relink)
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
 
       - name: Lint
@@ -104,18 +104,14 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install dependencies (relink)
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
 
       - name: Security
-        run: pnpm security
+        run: pnpm audit --groups=dependencies --level=high --recursive --format=table
+
       - name: Upload security report
         uses: actions/upload-artifact@v4
-        with:
-          name: security-report
-          path: security-report.txt
-      - name: Download security report
-        uses: actions/download-artifact@v4
         with:
           name: security-report
           path: security-report.txt
@@ -144,6 +140,11 @@ jobs:
 
       - name: Install dependencies (relink)
         run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
+
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+        env:
+          DATABASE_URL: postgresql://ecowatch:ecowatch_password@localhost:5432/ecowatch
 
       - name: Build
         run: pnpm build
