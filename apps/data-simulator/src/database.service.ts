@@ -1,17 +1,18 @@
-import { PrismaClient, SensorType } from '@prisma/client';
+import { SensorType } from '@prisma/client';
 import { InfluxDB } from '@influxdata/influxdb-client';
-import { BucketsAPI, OrgsAPI } from '@influxdata/influxdb-client-apis';
+import { BucketsAPI } from '@influxdata/influxdb-client-apis';
 import { influxdbConfig } from '@ecowatch/shared';
-
+import { OrganisationsService } from '@ecowatch/shared/src/interactors/organisations/organisations.service';
+import { SensorsService } from '@ecowatch/shared/src/interactors/sensors/sensors.service';
+import { DatabaseSensor } from './types';
 
 export class DatabaseService {
-    private prisma: PrismaClient;
     private bucketsAPI: BucketsAPI;
-    private orgsAPI: OrgsAPI;
 
-    constructor() {
-        this.prisma = new PrismaClient();
-
+    constructor(
+        private organisationsService: OrganisationsService,
+        private sensorsService: SensorsService,
+    ) {
         // Initialiser l'API InfluxDB pour la création de buckets
         if (!influxdbConfig().token) {
             throw new Error('INFLUXDB_TOKEN environment variable is required');
@@ -22,31 +23,52 @@ export class DatabaseService {
             token: influxdbConfig().token
         });
         this.bucketsAPI = new BucketsAPI(influxDB);
-        this.orgsAPI = new OrgsAPI(influxDB);
     }
 
     /**
      * Récupère tous les capteurs actifs avec leurs informations d'organisation
+     * @returns {Promise<DatabaseSensor[]>}
      */
-    async getActiveSensors() {
+    async getActiveSensors(): Promise<DatabaseSensor[]> {
         try {
-            const sensors = await this.prisma.sensor.findMany({
+            const sensors = await this.sensorsService.findMany({
                 where: {
                     isActive: true,
                 },
-                include: {
-                    organization: {
-                        select: {
-                            id: true,
-                            name: true,
-                            influxBucketName: true,
-                            bucketSyncStatus: true,
-                        }
+            });
+            const organizations = await this.organisationsService.findMany({
+                where: {
+                    id: {
+                        in: sensors.map(sensor => sensor.organizationId)
                     }
                 }
             });
 
-            return sensors;
+            return sensors
+                .map(sensor => {
+                    const organization = organizations.find(org => org.id === sensor.organizationId);
+                    if (!organization) {
+                        console.warn(`Organization not found for sensor ${sensor.id}`);
+                        return null;
+                    }
+                    return {
+                        id: sensor.id,
+                        name: sensor.name,
+                        type: sensor.type,
+                        location: sensor.location,
+                        latitude: sensor.latitude,
+                        longitude: sensor.longitude,
+                        isActive: sensor.isActive,
+                        organizationId: sensor.organizationId,
+                        organization: {
+                            id: organization.id,
+                            name: organization.name,
+                            influxBucketName: organization.influxBucketName,
+                            bucketSyncStatus: organization.bucketSyncStatus
+                        }
+                    } as DatabaseSensor;
+                })
+                .filter((sensor): sensor is DatabaseSensor => sensor !== null);
         } catch (error) {
             console.error('Error fetching sensors from database:', error);
             return [];
@@ -55,6 +77,8 @@ export class DatabaseService {
 
     /**
      * Crée un bucket InfluxDB pour une organisation
+     * @param {string} organizationId - L'ID de l'organisation
+     * @returns {Promise<{ success: boolean, bucketName?: string, bucketId?: string, error?: string }>}
      */
     private async createInfluxBucket(organizationId: string): Promise<{ success: boolean, bucketName?: string, bucketId?: string, error?: string }> {
         try {
@@ -111,11 +135,12 @@ export class DatabaseService {
 
     /**
      * Crée des capteurs de test si aucun n'existe
+     * @returns {Promise<void>}
      */
     async createTestSensors() {
         try {
             // Vérifier s'il y a des capteurs existants
-            const existingSensors = await this.prisma.sensor.count();
+            const existingSensors = await this.sensorsService.count({});
             if (existingSensors > 0) {
                 console.log(`Found ${existingSensors} existing sensors, skipping creation`);
                 return;
@@ -124,7 +149,7 @@ export class DatabaseService {
             console.log('No sensors found, creating test sensors...');
 
             // Créer une organisation de test si elle n'existe pas
-            let testOrg = await this.prisma.organization.findUnique({
+            let testOrg = await this.organisationsService.findUnique({
                 where: { id: 'test-org-1' }
             });
 
@@ -132,7 +157,7 @@ export class DatabaseService {
                 console.log('Creating test organization...');
 
                 // Étape 1: Créer l'organisation avec statut PENDING
-                testOrg = await this.prisma.organization.create({
+                testOrg = await this.organisationsService.create({
                     data: {
                         id: 'test-org-1',
                         name: 'Test Organization',
@@ -142,7 +167,7 @@ export class DatabaseService {
 
                 // Étape 2: Créer le bucket InfluxDB via le service
                 console.log('Creating InfluxDB bucket for test organization...');
-                await this.prisma.organization.update({
+                await this.organisationsService.update({
                     where: { id: testOrg.id },
                     data: { bucketSyncStatus: 'CREATING' }
                 });
@@ -151,7 +176,7 @@ export class DatabaseService {
 
                 if (bucketResult.success) {
                     // Étape 3: Mettre à jour l'organisation avec les infos du bucket
-                    testOrg = await this.prisma.organization.update({
+                    testOrg = await this.organisationsService.update({
                         where: { id: testOrg.id },
                         data: {
                             influxBucketName: bucketResult.bucketName,
@@ -165,7 +190,7 @@ export class DatabaseService {
                     console.log(`✅ Test organization created with active bucket: ${bucketResult.bucketName}`);
                 } else {
                     // En cas d'erreur, marquer comme ERROR
-                    await this.prisma.organization.update({
+                    await this.organisationsService.update({
                         where: { id: testOrg.id },
                         data: { bucketSyncStatus: 'ERROR' }
                     });
@@ -230,7 +255,7 @@ export class DatabaseService {
             ];
 
             for (const sensorData of testSensors) {
-                await this.prisma.sensor.create({
+                await this.sensorsService.create({
                     data: sensorData
                 });
             }
@@ -239,12 +264,5 @@ export class DatabaseService {
         } catch (error) {
             console.error('Error creating test sensors:', error);
         }
-    }
-
-    /**
-     * Ferme la connexion à la base de données
-     */
-    async disconnect() {
-        await this.prisma.$disconnect();
     }
 } 
