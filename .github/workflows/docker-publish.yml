@@ -2,7 +2,7 @@ name: Docker Publish
 
 on:
   push:
-    branches: [main, develop, feature/*]
+    branches: [main, develop]
     tags: ['v*']
   workflow_dispatch:
     inputs:
