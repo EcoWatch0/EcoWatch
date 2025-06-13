@@ -7,7 +7,9 @@ on:
     branches: [ main, develop, feature/* ]
 
 jobs:
-  # setup
+  #########################################################
+  # 1- Setup
+  #########################################################
   setup:
     runs-on: ubuntu-latest
     steps:
@@ -43,20 +45,63 @@ jobs:
         run: pnpm prisma generate
         env:
           DATABASE_URL: postgresql://ecowatch:ecowatch_password@localhost:5432/ecowatch
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: |
+            apps/**/dist
+            libs/**/dist
+            shared/**/dist
+      - name: Upload pnpm store
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-store
+          path: ${{ env.STORE_PATH }}
 
-  # lint
+  #########################################################
+  # 2- Lint
+  #########################################################
   lint:
     needs: [setup]
     runs-on: ubuntu-latest
     steps:
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: |
+            apps/**/dist
+            libs/**/dist
+            shared/**/dist
+      - name: Download pnpm store
+        uses: actions/download-artifact@v4
+        with:
+          name: pnpm-store
+          path: ${{ env.STORE_PATH }}
       - name: Lint
         run: pnpm lint
 
-  # security
+  #########################################################
+  # 3- Security
+  #########################################################
   security:
     needs: [lint]
     runs-on: ubuntu-latest
     steps:
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: |
+            apps/**/dist
+            libs/**/dist
+            shared/**/dist
+      - name: Download pnpm store
+        uses: actions/download-artifact@v4
+        with:
+          name: pnpm-store
+          path: ${{ env.STORE_PATH }}
       - name: Security
         run: pnpm security
       - name: Upload security report
@@ -70,15 +115,32 @@ jobs:
           name: security-report
           path: security-report.txt
 
-  # build
+  #########################################################
+  # 3- Build
+  #########################################################
   build:
     needs: [lint]
     runs-on: ubuntu-latest
     steps:
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: |
+            apps/**/dist
+            libs/**/dist
+            shared/**/dist
+      - name: Download pnpm store
+        uses: actions/download-artifact@v4
+        with:
+          name: pnpm-store
+          path: ${{ env.STORE_PATH }}
       - name: Build
         run: pnpm build
 
-  # test 
+  #########################################################
+  # 4- Test
+  #########################################################
   test:
     needs: [build]
     runs-on: ubuntu-latest
@@ -119,9 +181,22 @@ jobs:
         ports:
           - 8086:8086
     steps:
-        - name: Test api-gateway
-          run: pnpm --filter api-gateway test
-          env:
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: |
+            apps/**/dist
+            libs/**/dist
+            shared/**/dist
+      - name: Download pnpm store
+        uses: actions/download-artifact@v4
+        with:
+          name: pnpm-store
+          path: ${{ env.STORE_PATH }}
+      - name: Test api-gateway
+        run: pnpm --filter api-gateway test
+        env:
             API_PORT: 3001
             FRONTEND_URL: http://localhost:3000
             POSTGRES_HOST: localhost
@@ -136,14 +211,14 @@ jobs:
             INFLUXDB_ORG: ecowatch
             INFLUXDB_BUCKET: ecowatch
 
-        - name: Test web
-          run: pnpm --filter web test
-          env:
+      - name: Test web
+        run: pnpm --filter web test
+        env:
             NEXT_PUBLIC_API_URL: http://localhost:3001/api 
         
-        - name: Test data-simulator
-          run: pnpm --filter data-simulator test
+      - name: Test data-simulator
+        run: pnpm --filter data-simulator test
         
-        - name: Test mqtt-influxdb-service
-          run: pnpm --filter mqtt-influxdb-service test
+      - name: Test mqtt-influxdb-service
+        run: pnpm --filter mqtt-influxdb-service test
         
