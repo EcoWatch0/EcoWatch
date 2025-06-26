@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web
+  namespace: eco-watch
 spec:
   replicas: 3
   selector:
@@ -43,8 +44,6 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
-# imagePullSecrets:
-        # - name: docker-registry-secret
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
