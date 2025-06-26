@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-config
+data:
+  # Next.js Configuration
+  NODE_ENV: "production"
+  
+  # API Configuration
+  NEXT_PUBLIC_API_URL: "https://api.ecowatch.ski-sync.com"
+  
+  # Application Configuration
+  NEXTAUTH_URL: "https://ecowatch.ski-sync.com"
+  NEXTAUTH_SECRET: "your-nextauth-secret-here"
+  
