@@ -1,117 +1,95 @@
+# --- Builder stage (install + build) ---
 FROM node:20-alpine AS builder
 
-# Installation de pnpm
-RUN npm install -g pnpm prisma
-
+# 1) Installer pnpm & préparer le workdir
+RUN npm install -g pnpm
 WORKDIR /app
 
-# Copie des fichiers de dépendances
-COPY pnpm-workspace.yaml ./
-COPY package.json pnpm-lock.yaml ./
-COPY apps/api-gateway/package.json ./apps/api-gateway/
-COPY apps/web/package.json ./apps/web/
-COPY apps/mqtt-influxdb-service/package.json ./apps/mqtt-influxdb-service/
-COPY apps/data-simulator/package.json ./apps/data-simulator/
-COPY libs/shared/package.json ./libs/shared/
+# 2) Copier les manifests pour installer TOUTES les deps (prod + dev)
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/api-gateway/package.json                   ./apps/api-gateway/
+COPY apps/web/package.json                           ./apps/web/
+COPY apps/mqtt-influxdb-service/package.json         ./apps/mqtt-influxdb-service/
+COPY apps/data-simulator/package.json                ./apps/data-simulator/
+COPY libs/shared/package.json                        ./libs/shared/
+RUN pnpm install --frozen-lockfile
 
-# Installation des dépendances
-RUN pnpm install --prod --frozen-lockfile
-
-# Copie du reste des fichiers
+# 3) Copier le code source
 COPY . .
 
-# Build des applications
+# 4) Générer les clients Prisma dans chaque workspace concerné
 RUN pnpm prisma generate
-RUN pnpm --filter shared build
-RUN pnpm --filter api-gateway build
-RUN pnpm --filter web build
-RUN pnpm --filter data-simulator build
-RUN pnpm --filter mqtt-influxdb-service build
 
+# 5) Compiler chaque workspace
+RUN pnpm --filter shared                   build \
+    && pnpm --filter api-gateway           build \
+    && pnpm --filter web                   build \
+    && pnpm --filter data-simulator        build \
+    && pnpm --filter mqtt-influxdb-service build
+
+# --- Runner for API Gateway ---
 FROM node:20-alpine AS runner-api
-
 WORKDIR /app
 
 # Créer un utilisateur non-root
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 
-# Copier les fichiers construits pour l'API Gateway
-COPY --chown=nextjs:nodejs --from=builder /app/apps/api-gateway/dist ./apps/api-gateway/dist
-# Copier les dépendances (hoistées et spécifiques)
-COPY --chown=nextjs:nodejs --from=builder /app/node_modules ./node_modules
+# Copier build + seules prod deps
+COPY --chown=nextjs:nodejs --from=builder /app/apps/api-gateway/dist         ./apps/api-gateway/dist
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules                  ./node_modules
 COPY --chown=nextjs:nodejs --from=builder /app/apps/api-gateway/node_modules ./apps/api-gateway/node_modules
-COPY --chown=nextjs:nodejs --from=builder /app/libs/shared/node_modules ./libs/shared/node_modules
-COPY --chown=nextjs:nodejs --from=builder /app/libs/shared ./libs/shared
+COPY --chown=nextjs:nodejs --from=builder /app/libs/shared/node_modules      ./libs/shared/node_modules
+COPY --chown=nextjs:nodejs --from=builder /app/libs/shared                   ./libs/shared
 
-# Passer à l'utilisateur non-root
 USER nextjs
-
 EXPOSE 3001
-
-# Lancer l'API Gateway : chemin mis à jour
 CMD ["node", "apps/api-gateway/dist/main.js"]
 
+# --- Runner for Web ---
 FROM node:20-alpine AS runner-web
-
 WORKDIR /app
 
-# Créer un utilisateur non-root
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 
-# Copier les fichiers nécessaires pour l'application web
-COPY --chown=nextjs:nodejs --from=builder /app/apps/web/.next ./apps/web/.next
-COPY --chown=nextjs:nodejs --from=builder /app/apps/web/public ./apps/web/public
-COPY --chown=nextjs:nodejs --from=builder /app/node_modules ./node_modules
-COPY --chown=nextjs:nodejs --from=builder /app/apps/web/node_modules ./apps/web/node_modules
+COPY --chown=nextjs:nodejs --from=builder /app/apps/web/.next           ./apps/web/.next
+COPY --chown=nextjs:nodejs --from=builder /app/apps/web/public          ./apps/web/public
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules             ./node_modules
+COPY --chown=nextjs:nodejs --from=builder /app/apps/web/node_modules    ./apps/web/node_modules
 COPY --chown=nextjs:nodejs --from=builder /app/libs/shared/node_modules ./libs/shared/node_modules
-COPY --chown=nextjs:nodejs --from=builder /app/libs/shared ./libs/shared
+COPY --chown=nextjs:nodejs --from=builder /app/libs/shared              ./libs/shared
 
-# Passer à l'utilisateur non-root
 USER nextjs
-
-EXPOSE 3000
-
-# Positionner le contexte de travail dans le dossier de l'application web
 WORKDIR /app/apps/web
-
-# Ajouter le répertoire des exécutables de l'application web dans le PATH
 ENV PATH /app/apps/web/node_modules/.bin:$PATH
-
-# Lancer Next en mode production
+EXPOSE 3000
 CMD ["next", "start"]
 
+# --- Runner for Data Simulator ---
 FROM node:20-alpine AS runner-data-simulator
-
 WORKDIR /app
 
-# Créer un utilisateur non-root
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 
-COPY --chown=nextjs:nodejs --from=builder /app/apps/data-simulator/dist ./apps/data-simulator/dist
-COPY --chown=nextjs:nodejs --from=builder /app/node_modules ./node_modules
+COPY --chown=nextjs:nodejs --from=builder /app/apps/data-simulator/dist         ./apps/data-simulator/dist
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules                     ./node_modules
 COPY --chown=nextjs:nodejs --from=builder /app/apps/data-simulator/node_modules ./apps/data-simulator/node_modules
-COPY --chown=nextjs:nodejs --from=builder /app/libs/shared/node_modules ./libs/shared/node_modules
-COPY --chown=nextjs:nodejs --from=builder /app/libs/shared ./libs/shared
+COPY --chown=nextjs:nodejs --from=builder /app/libs/shared/node_modules         ./libs/shared/node_modules
+COPY --chown=nextjs:nodejs --from=builder /app/libs/shared                      ./libs/shared
 
-# Passer à l'utilisateur non-root
 USER nextjs
-
 CMD ["node", "apps/data-simulator/dist/index.js"]
 
+# --- Runner for MQTT→InfluxDB Service ---
 FROM node:20-alpine AS runner-mqtt-influxdb-service
-
 WORKDIR /app
 
-# Créer un utilisateur non-root
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 
-COPY --chown=nextjs:nodejs --from=builder /app/apps/mqtt-influxdb-service/dist ./apps/mqtt-influxdb-service/dist
-COPY --chown=nextjs:nodejs --from=builder /app/node_modules ./node_modules
+COPY --chown=nextjs:nodejs --from=builder /app/apps/mqtt-influxdb-service/dist         ./apps/mqtt-influxdb-service/dist
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules                            ./node_modules
 COPY --chown=nextjs:nodejs --from=builder /app/apps/mqtt-influxdb-service/node_modules ./apps/mqtt-influxdb-service/node_modules
-COPY --chown=nextjs:nodejs --from=builder /app/libs/shared/node_modules ./libs/shared/node_modules
-COPY --chown=nextjs:nodejs --from=builder /app/libs/shared ./libs/shared
+COPY --chown=nextjs:nodejs --from=builder /app/libs/shared/node_modules                ./libs/shared/node_modules
+COPY --chown=nextjs:nodejs --from=builder /app/libs/shared                             ./libs/shared
 
-# Passer à l'utilisateur non-root
 USER nextjs
-
 CMD ["node", "apps/mqtt-influxdb-service/dist/main.js"]
