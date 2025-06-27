@@ -58,10 +58,11 @@ jobs:
           target: builder
           platforms: linux/amd64
           load: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }}
 
       - name: Save builder image to tar
         run: |
-          docker save builder \
+          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }} \
             | gzip > builder.tar.gz
 
       - name: Upload builder-image artifact
