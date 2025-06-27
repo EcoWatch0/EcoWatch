@@ -140,5 +140,8 @@ jobs:
           target: ${{ matrix.target }}
           platforms: linux/amd64
           push: true
+          cache-from: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }}
+            type=gha
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
