@@ -141,7 +141,7 @@ jobs:
           platforms: linux/amd64
           push: true
           cache-from: |
-            type=image,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }}
+            type=docker,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }}
             type=gha
           cache-to: type=gha,mode=max
           tags: ${{ steps.meta.outputs.tags }}
