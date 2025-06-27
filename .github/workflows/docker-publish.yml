@@ -22,7 +22,6 @@ env:
   IMAGE_NAMESPACE: code0ex
 
 jobs:
-  # 1) Construire et publier l’image “builder”, puis la sauvegarder en tant qu’artefact
   build-builder:
     runs-on: ubuntu-latest
     permissions:
@@ -59,11 +58,10 @@ jobs:
           target: builder
           platforms: linux/amd64
           load: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/ecowatch-builder:${{ env.ENV_TAG }}
 
       - name: Save builder image to tar
         run: |
-          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/ecowatch-builder:${{ env.ENV_TAG }} \
+          docker save builder \
             | gzip > builder.tar.gz
 
       - name: Upload builder-image artifact
@@ -73,7 +71,6 @@ jobs:
           path: builder.tar.gz
           retention-days: 1
 
-  # 2) Pour chaque runner, on récupère l’image builder, on la charge, puis on ne rebuild que l’étape runtime
   build-and-push:
     needs: build-builder
     runs-on: ubuntu-latest
