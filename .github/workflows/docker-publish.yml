@@ -58,8 +58,19 @@ jobs:
           target: builder
           platforms: linux/amd64
           load: true
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }}
+          tags: builder:local
+
+      - name: Save builder image to tar
+        run: |
+          docker save builder:local \
+            | gzip > builder.tar.gz
+
+      - name: Upload builder-image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: builder-image
+          path: builder.tar.gz
+          retention-days: 1
 
   build-and-push:
     needs: build-builder
@@ -81,6 +92,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download builder-image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: builder-image
+
+      - name: Load builder image into Docker
+        run: docker load -i builder.tar.gz
 
       - name: Définir ENV_TAG
         id: set-env
@@ -117,12 +136,12 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: Dockerfile
+          file: Dockerfile.runner
           target: ${{ matrix.target }}
           platforms: linux/amd64
           push: true
           cache-from: |
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }}
+            type=docker,ref=builder:local
             type=gha
           cache-to: type=gha,mode=max
           tags: ${{ steps.meta.outputs.tags }}
