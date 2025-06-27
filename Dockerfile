@@ -17,6 +17,9 @@ COPY libs/shared/package.json ./libs/shared/
 # Installation des dépendances
 RUN pnpm install --prod --frozen-lockfile
 
+# install prisma
+RUN pnpm install prisma
+
 # Copie du reste des fichiers
 COPY . .
 
