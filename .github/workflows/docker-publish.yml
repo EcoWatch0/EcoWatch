@@ -19,34 +19,18 @@ on:
 
 env:
   REGISTRY: docker.io
+  IMAGE_NAMESPACE: code0ex
 
 jobs:
-  build-and-push:
+  # 1) Construire et publier l’image “builder”, puis la sauvegarder en tant qu’artefact
+  build-builder:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        image:
-          - name: ecowatch-api
-            context: .
-            target: runner-api
-            path: .
-          - name: ecowatch-web
-            context: .
-            target: runner-web
-            path: .
-          - name: ecowatch-mqtt-influxdb-service
-            context: .
-            target: runner-mqtt-influxdb-service
-            path: .
-          - name: ecowatch-data-simulator
-            context: .
-            target: runner-data-simulator
-            path: .
     permissions:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Définir ENV_TAG
         id: set-env
@@ -54,7 +38,7 @@ jobs:
           tag=$([[ "${{ github.event.inputs.environment }}" = "main" ]] && echo prod || echo pre-prod)
           echo "ENV_TAG=$tag" >> $GITHUB_ENV
 
-      - name: Set up Docker Buildx
+      - name: Installer Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker-container
@@ -67,11 +51,79 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata (image ${{ matrix.image.name }})
+      - name: Build & load builder stage
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          target: builder
+          platforms: linux/amd64
+          load: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/ecowatch-builder:${{ env.ENV_TAG }}
+
+      - name: Save builder image to tar
+        run: |
+          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/ecowatch-builder:${{ env.ENV_TAG }} \
+            | gzip > builder.tar.gz
+
+      - name: Upload builder-image artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: builder-image
+          path: builder.tar.gz
+          retention-days: 1
+
+  # 2) Pour chaque runner, on récupère l’image builder, on la charge, puis on ne rebuild que l’étape runtime
+  build-and-push:
+    needs: build-builder
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - image: ecowatch-api
+            target: runner-api
+          - image: ecowatch-web
+            target: runner-web
+          - image: ecowatch-mqtt-influxdb-service
+            target: runner-mqtt-influxdb-service
+          - image: ecowatch-data-simulator
+            target: runner-data-simulator
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download builder-image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: builder-image
+
+      - name: Load builder image into Docker
+        run: docker load -i builder.tar.gz
+
+      - name: Définir ENV_TAG
+        run: echo "ENV_TAG=${{ env.ENV_TAG }}" >> $GITHUB_ENV
+
+      - name: Installer Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          driver-opts: |
+            image=moby/buildkit:latest
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (image ${{ matrix.image }})
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/code0ex/${{ matrix.image.name }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}
           tags: |
             type=raw,value=${{ env.ENV_TAG }}
             type=semver,pattern={{version}}
@@ -79,14 +131,13 @@ jobs:
             type=semver,pattern={{major}}
             type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
 
-      - name: Build & push ${{ matrix.image.name }}
+      - name: Build & push ${{ matrix.image }}
         uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.image.context }}
-          target: ${{ matrix.image.target }}
+          context: .
+          file: Dockerfile
+          target: ${{ matrix.target }}
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
