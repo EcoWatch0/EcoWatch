@@ -1,7 +1,7 @@
 FROM node:20-alpine AS builder
 
 # Installation de pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm prisma
 
 WORKDIR /app
 
@@ -16,9 +16,6 @@ COPY libs/shared/package.json ./libs/shared/
 
 # Installation des dépendances
 RUN pnpm install --prod --frozen-lockfile
-
-# install prisma
-RUN pnpm install prisma
 
 # Copie du reste des fichiers
 COPY . .
