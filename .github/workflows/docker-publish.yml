@@ -58,11 +58,11 @@ jobs:
           target: builder
           platforms: linux/amd64
           load: true
-          tags: builder:local
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }}
 
       - name: Save builder image to tar
         run: |
-          docker save builder:local \
+          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }} \
             | gzip > builder.tar.gz
 
       - name: Upload builder-image artifact
@@ -136,12 +136,12 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: Dockerfile.runner
+          file: Dockerfile
           target: ${{ matrix.target }}
           platforms: linux/amd64
           push: true
           cache-from: |
-            type=docker,ref=builder:local
+            type=docker,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }}
             type=gha
           cache-to: type=gha,mode=max
           tags: ${{ steps.meta.outputs.tags }}
