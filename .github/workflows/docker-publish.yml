@@ -104,7 +104,10 @@ jobs:
         run: docker load -i builder.tar.gz
 
       - name: Définir ENV_TAG
-        run: echo "ENV_TAG=${{ env.ENV_TAG }}" >> $GITHUB_ENV
+        id: set-env
+        run: |
+          tag=$([[ "${{ github.event.inputs.environment }}" = "main" ]] && echo prod || echo pre-prod)
+          echo "ENV_TAG=$tag" >> $GITHUB_ENV
 
       - name: Installer Buildx
         uses: docker/setup-buildx-action@v3
