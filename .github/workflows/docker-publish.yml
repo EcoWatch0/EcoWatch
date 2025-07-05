@@ -57,24 +57,28 @@ jobs:
       - name: Calculer la version
         id: set-version
         run: |
-          # Si on a poussé un tag vX.Y.Z
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             VER=${GITHUB_REF#refs/tags/v}
           else
-            # Récupérer dernier tag semver (ou v0.0.0 si aucun)
             LATEST=$(git describe --tags --match "v[0-9]*" --abbrev=0 2>/dev/null || echo v0.0.0)
             IFS='.' read -r MAJ MIN PAT <<< "${LATEST#v}"
             case "${{ steps.set-env.outputs.ENV_TAG }}" in
-              prod)    ((PAT++)) ;;
-              pre-prod) ((MIN++)); PAT=0 ;;
-              dev)     ((PAT++)) ;;
+              prod)
+                PAT=$((PAT+1))
+                ;;
+              pre-prod)
+                MIN=$((MIN+1))
+                PAT=0
+                ;;
+              dev)
+                PAT=$((PAT+1))
+                ;;
             esac
             BASE="v${MAJ}.${MIN}.${PAT}"
             if [[ "${{ steps.set-env.outputs.ENV_TAG }}" == "dev" ]]; then
               SHA=$(git rev-parse --short HEAD)
               VER="${BASE}-dev-${SHA}"
             else
-              # On retire le "v" pour le tag docker
               VER="${BASE#v}-${{ steps.set-env.outputs.ENV_TAG }}"
             fi
           fi
