@@ -19,7 +19,7 @@ on:
           - main
         default: develop
       version:
-        description: 'Version (ex. 1.2.3) facultative'
+        description: 'Version (ex. 1.2.3)  facultative'
         required: false
         type: string
 
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ENV_TAG: ${{ steps.set-env.outputs.ENV_TAG }}
-      VERSION: ${{ steps.set-version.outputs.VERSION }}
+      VERSION:  ${{ steps.set-version.outputs.VERSION }}
     steps:
       - name: Checkout complet
         uses: actions/checkout@v4
@@ -45,21 +45,24 @@ jobs:
         run: |
           ref=${GITHUB_REF#refs/*/}
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "::set-output name=ENV_TAG::prod"
+            tag=prod
           elif [[ "$ref" == "main" ]]; then
-            echo "::set-output name=ENV_TAG::prod"
+            tag=prod
           elif [[ "$ref" == "develop" ]]; then
-            echo "::set-output name=ENV_TAG::pre-prod"
+            tag=pre-prod
           else
-            echo "::set-output name=ENV_TAG::dev"
+            tag=dev
           fi
+          echo "ENV_TAG=$tag" >> $GITHUB_OUTPUT
 
       - name: Calculer la version
         id: set-version
         run: |
+          # Si c'est un tag vX.Y.Z → on garde le 'v'
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            VER=${GITHUB_REF#refs/tags/v}
+            ver=${GITHUB_REF#refs/tags/}
           else
+            # Récupérer dernier tag semver (ou v0.0.0)
             LATEST=$(git describe --tags --match "v[0-9]*" --abbrev=0 2>/dev/null || echo v0.0.0)
             IFS='.' read -r MAJ MIN PAT <<< "${LATEST#v}"
             case "${{ steps.set-env.outputs.ENV_TAG }}" in
@@ -77,12 +80,12 @@ jobs:
             BASE="v${MAJ}.${MIN}.${PAT}"
             if [[ "${{ steps.set-env.outputs.ENV_TAG }}" == "dev" ]]; then
               SHA=$(git rev-parse --short HEAD)
-              VER="${BASE}-dev-${SHA}"
+              ver="${BASE}-dev-${SHA}"
             else
-              VER="${BASE#v}-${{ steps.set-env.outputs.ENV_TAG }}"
+              ver="${BASE}-${{ steps.set-env.outputs.ENV_TAG }}"
             fi
           fi
-          echo "::set-output name=VERSION::${VER}"
+          echo "VERSION=$ver" >> $GITHUB_OUTPUT
 
   build-builder:
     name: Construire l'image builder
@@ -177,10 +180,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}
           tags: |
             type=raw,value=${{ needs.prepare.outputs.VERSION }}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable=${{ needs.prepare.outputs.ENV_TAG == 'prod' }}
 
       - name: Build & Push ${{ matrix.service }}
         uses: docker/build-push-action@v5
