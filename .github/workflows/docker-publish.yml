@@ -2,18 +2,24 @@ name: Docker Publish
 
 on:
   push:
-    branches: [main, develop, feature/*]
-    tags: ['v*']
+    branches:
+      - main
+      - develop
+      - 'feature/*'
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: 'Environnement à déployer'
         required: true
-        default: 'develop'
         type: choice
-        options: [develop, main]
+        options:
+          - develop
+          - main
+        default: develop
       version:
-        description: 'Version tag (optional)'
+        description: 'Version (ex. 1.2.3) facultative'
         required: false
         type: string
 
@@ -22,7 +28,61 @@ env:
   IMAGE_NAMESPACE: code0ex
 
 jobs:
+  prepare:
+    name: Préparer VERSION & ENV_TAG
+    runs-on: ubuntu-latest
+    outputs:
+      ENV_TAG: ${{ steps.set-env.outputs.ENV_TAG }}
+      VERSION: ${{ steps.set-version.outputs.VERSION }}
+    steps:
+      - name: Checkout complet
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Détecter l'environnement
+        id: set-env
+        run: |
+          ref=${GITHUB_REF#refs/*/}
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "::set-output name=ENV_TAG::prod"
+          elif [[ "$ref" == "main" ]]; then
+            echo "::set-output name=ENV_TAG::prod"
+          elif [[ "$ref" == "develop" ]]; then
+            echo "::set-output name=ENV_TAG::pre-prod"
+          else
+            echo "::set-output name=ENV_TAG::dev"
+          fi
+
+      - name: Calculer la version
+        id: set-version
+        run: |
+          # Si on a poussé un tag vX.Y.Z
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VER=${GITHUB_REF#refs/tags/v}
+          else
+            # Récupérer dernier tag semver (ou v0.0.0 si aucun)
+            LATEST=$(git describe --tags --match "v[0-9]*" --abbrev=0 2>/dev/null || echo v0.0.0)
+            IFS='.' read -r MAJ MIN PAT <<< "${LATEST#v}"
+            case "${{ steps.set-env.outputs.ENV_TAG }}" in
+              prod)    ((PAT++)) ;;
+              pre-prod) ((MIN++)); PAT=0 ;;
+              dev)     ((PAT++)) ;;
+            esac
+            BASE="v${MAJ}.${MIN}.${PAT}"
+            if [[ "${{ steps.set-env.outputs.ENV_TAG }}" == "dev" ]]; then
+              SHA=$(git rev-parse --short HEAD)
+              VER="${BASE}-dev-${SHA}"
+            else
+              # On retire le "v" pour le tag docker
+              VER="${BASE#v}-${{ steps.set-env.outputs.ENV_TAG }}"
+            fi
+          fi
+          echo "::set-output name=VERSION::${VER}"
+
   build-builder:
+    name: Construire l'image builder
+    needs: prepare
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -31,20 +91,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Définir ENV_TAG
-        id: set-env
-        run: |
-          tag=$([[ "${{ github.event.inputs.environment }}" = "main" ]] && echo prod || echo pre-prod)
-          echo "ENV_TAG=$tag" >> $GITHUB_ENV
-
       - name: Installer Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker-container
-          driver-opts: |
-            image=moby/buildkit:latest
+          driver-opts: image=moby/buildkit:latest
 
-      - name: Login to Docker Hub
+      - name: Login Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -58,33 +111,36 @@ jobs:
           target: builder
           platforms: linux/amd64
           load: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ needs.prepare.outputs.ENV_TAG }}
 
-      - name: Save builder image to tar
+      - name: Sauvegarder l'image builder en tar
         run: |
-          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }} \
+          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ needs.prepare.outputs.ENV_TAG }} \
             | gzip > builder.tar.gz
 
-      - name: Upload builder-image artifact
+      - name: Upload de l'artefact builder
         uses: actions/upload-artifact@v4
         with:
           name: builder-image
           path: builder.tar.gz
           retention-days: 1
 
-  build-and-push:
-    needs: build-builder
+  build-and-publish:
+    name: Build & Push des services
+    needs:
+      - prepare
+      - build-builder
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-          - image: ecowatch-api
+          - service: ecowatch-api
             target: runner-api
-          - image: ecowatch-web
+          - service: ecowatch-web
             target: runner-web
-          - image: ecowatch-mqtt-influxdb-service
+          - service: ecowatch-mqtt-influxdb-service
             target: runner-mqtt-influxdb-service
-          - image: ecowatch-data-simulator
+          - service: ecowatch-data-simulator
             target: runner-data-simulator
     permissions:
       contents: read
@@ -93,46 +149,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download builder-image artifact
+      - name: Télécharger l'artefact builder
         uses: actions/download-artifact@v4
         with:
           name: builder-image
 
-      - name: Load builder image into Docker
+      - name: Charger l'image builder
         run: docker load -i builder.tar.gz
-
-      - name: Définir ENV_TAG
-        id: set-env
-        run: |
-          tag=$([[ "${{ github.event.inputs.environment }}" = "main" ]] && echo prod || echo pre-prod)
-          echo "ENV_TAG=$tag" >> $GITHUB_ENV
 
       - name: Installer Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker-container
-          driver-opts: |
-            image=moby/buildkit:latest
 
-      - name: Login to Docker Hub
+      - name: Login Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata (image ${{ matrix.image }})
+      - name: Extract metadata (${{ matrix.service }})
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}
           tags: |
-            type=raw,value=${{ env.ENV_TAG }}
+            type=raw,value=${{ needs.prepare.outputs.VERSION }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
+            type=raw,value=latest,enable=${{ needs.prepare.outputs.ENV_TAG == 'prod' }}
 
-      - name: Build & push ${{ matrix.image }}
+      - name: Build & Push ${{ matrix.service }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -141,7 +187,7 @@ jobs:
           platforms: linux/amd64
           push: true
           cache-from: |
-            type=docker,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ env.ENV_TAG }}
+            type=docker,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ needs.prepare.outputs.ENV_TAG }}
             type=gha
           cache-to: type=gha,mode=max
           tags: ${{ steps.meta.outputs.tags }}
