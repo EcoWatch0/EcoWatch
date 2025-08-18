@@ -1,0 +1,241 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  #########################################################
+  # 1- Setup
+  #########################################################
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+        env:
+          DATABASE_URL: postgresql://ecowatch:ecowatch_password@localhost:5432/ecowatch
+            
+
+  #########################################################
+  # 2- Lint
+  #########################################################
+  lint:
+    needs: [setup]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
+
+      - name: Lint
+        run: pnpm lint
+
+  #########################################################
+  # 3- Security
+  #########################################################
+  security:
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
+
+      - name: Security
+        run: pnpm audit
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: security-report.txt
+
+  #########################################################
+  # 3- Build
+  #########################################################
+  build:
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
+
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+        env:
+          DATABASE_URL: postgresql://ecowatch:ecowatch_password@localhost:5432/ecowatch
+
+      - name: Build
+        run: pnpm build
+
+  #########################################################
+  # 4- Test
+  #########################################################
+  test:
+    needs: [build]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ecowatch
+          POSTGRES_PASSWORD: ecowatch_password
+          POSTGRES_DB: ecowatch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      influxdb:
+        image: influxdb:2.7-alpine
+        env:
+          DOCKER_INFLUXDB_INIT_MODE: setup
+          DOCKER_INFLUXDB_INIT_USERNAME: admin
+          DOCKER_INFLUXDB_INIT_PASSWORD: ecowatch_password
+          DOCKER_INFLUXDB_INIT_ORG: ecowatch
+          DOCKER_INFLUXDB_INIT_BUCKET: ecowatch
+          DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: your_token_here
+        ports:
+          - 8086:8086
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies (relink)
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
+
+      - name: Test api-gateway
+        run: pnpm --filter api-gateway test
+        env:
+            API_PORT: 3001
+            FRONTEND_URL: http://localhost:3000
+            POSTGRES_HOST: localhost
+            POSTGRES_PORT: 5432
+            POSTGRES_USER: ecowatch
+            POSTGRES_PASSWORD: ecowatch_password
+            POSTGRES_DB: ecowatch
+            REDIS_HOST: localhost
+            REDIS_PORT: 6379
+            INFLUXDB_URL: http://localhost:8086
+            INFLUXDB_TOKEN: your_token_here
+            INFLUXDB_ORG: ecowatch
+            INFLUXDB_BUCKET: ecowatch
+
+      - name: Test web
+        run: pnpm --filter web test
+        env:
+            NEXT_PUBLIC_API_URL: http://localhost:3001/api 
+        
+      # TODO: not test for now
+      # - name: Test data-simulator
+      #   run: pnpm --filter data-simulator test
+        
+      # - name: Test mqtt-influxdb-service
+      #   run: pnpm --filter mqtt-influxdb-service test
+        

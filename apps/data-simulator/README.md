@@ -31,9 +31,9 @@ MQTT_CLIENT_ID=eco-watch-data-simulator
 MQTT_USERNAME=
 MQTT_PASSWORD=
 
-# Simulation Configuration
-SIMULATION_INTERVAL_MS=5000
-SENSORS_COUNT=5
+# Simulation Configuration (via data-faker.config)
+DATA_FAKER_INTERVAL_MS=5000
+DATA_FAKER_SENSORS_COUNT=5
 ```
 
 ## Utilisation
@@ -93,4 +93,4 @@ Ces données peuvent ensuite être consommées par les autres services qui s'abo
 
 Les données sont publiées sur les topics suivants :
 
-- `ecowatch/sensors/{sensorId}/data` - Données complètes d'un capteur 
+- `ecowatch/sensors/{sensorId}/data` - Données complètes d'un capteur

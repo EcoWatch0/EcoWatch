@@ -5,165 +5,193 @@ on:
     branches:
       - main
       - develop
+      - 'feature/*'
     tags:
       - 'v*'
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: 'Environnement à déployer'
         required: true
-        default: 'develop'
         type: choice
         options:
           - develop
           - main
+        default: develop
       version:
-        description: 'Version tag (optional)'
+        description: 'Version (ex. 1.2.3)  facultative'
         required: false
         type: string
 
 env:
   REGISTRY: docker.io
-  API_IMAGE_NAME: code0ex/ecowatch-api
-  WEB_IMAGE_NAME: code0ex/ecowatch-web
-  MQTT_INFLUXDB_SERVICE_IMAGE_NAME: code0ex/ecowatch-mqtt-influxdb-service
-  DATA_SIMULATOR_IMAGE_NAME: code0ex/ecowatch-data-simulator
+  IMAGE_NAMESPACE: code0ex
 
 jobs:
-  build-and-push:
+  prepare:
+    name: Préparer VERSION & ENV_TAG
+    runs-on: ubuntu-latest
+    outputs:
+      ENV_TAG: ${{ steps.set-env.outputs.ENV_TAG }}
+      VERSION:  ${{ steps.set-version.outputs.VERSION }}
+    steps:
+      - name: Checkout complet
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Détecter l'environnement
+        id: set-env
+        run: |
+          ref=${GITHUB_REF#refs/*/}
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            tag=prod
+          elif [[ "$ref" == "main" ]]; then
+            tag=prod
+          elif [[ "$ref" == "develop" ]]; then
+            tag=pre-prod
+          else
+            tag=dev
+          fi
+          echo "ENV_TAG=$tag" >> $GITHUB_OUTPUT
+
+      - name: Calculer la version
+        id: set-version
+        run: |
+          # Si c'est un tag vX.Y.Z → on garde le 'v'
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            ver=${GITHUB_REF#refs/tags/}
+          else
+            # Récupérer dernier tag semver (ou v0.0.0)
+            LATEST=$(git describe --tags --match "v[0-9]*" --abbrev=0 2>/dev/null || echo v0.0.0)
+            IFS='.' read -r MAJ MIN PAT <<< "${LATEST#v}"
+            case "${{ steps.set-env.outputs.ENV_TAG }}" in
+              prod)
+                PAT=$((PAT+1))
+                ;;
+              pre-prod)
+                MIN=$((MIN+1))
+                PAT=0
+                ;;
+              dev)
+                PAT=$((PAT+1))
+                ;;
+            esac
+            BASE="v${MAJ}.${MIN}.${PAT}"
+            if [[ "${{ steps.set-env.outputs.ENV_TAG }}" == "dev" ]]; then
+              SHA=$(git rev-parse --short HEAD)
+              ver="${BASE}-dev-${SHA}"
+            else
+              ver="${BASE}-${{ steps.set-env.outputs.ENV_TAG }}"
+            fi
+          fi
+          echo "VERSION=$ver" >> $GITHUB_OUTPUT
+
+  build-builder:
+    name: Construire l'image builder
+    needs: prepare
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Définir le tag d'environnement
-        id: set-env-tag
-        run: |
-          if [ "${{ github.event.inputs.environment }}" = "main" ]; then
-            echo "ENVIRONMENT_TAG=prod" >> $GITHUB_ENV
-          else
-            echo "ENVIRONMENT_TAG=pre-prod" >> $GITHUB_ENV
-          fi
-
-      - name: Set up Docker Buildx
+      - name: Installer Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          driver-opts: image=moby/buildkit:latest
 
-      - name: Login to Docker Hub
+      - name: Login Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Extract metadata for API image
-      - name: Extract metadata for API image
-        id: meta-api
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.API_IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ env.ENVIRONMENT_TAG }}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
-
-      # Extract metadata for Web image
-      - name: Extract metadata for Web image
-        id: meta-web
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.WEB_IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ env.ENVIRONMENT_TAG }}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
-
-      # Extract metadata for MQTT InfluxDB Service image
-      - name: Extract metadata for MQTT InfluxDB Service image
-        id: meta-mqtt-influxdb-service
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.MQTT_INFLUXDB_SERVICE_IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ env.ENVIRONMENT_TAG }}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
-
-      # Extract metadata for Data Simulator image
-      - name: Extract metadata for Data Simulator image
-        id: meta-data-simulator
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.DATA_SIMULATOR_IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ env.ENVIRONMENT_TAG }}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable=${{ github.event.inputs.environment == 'main' }}
-
-      # Scan Dockerfile for vulnerabilities
-      - name: Run Trivy vulnerability scanner on Dockerfile
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'config'
-          scan-ref: '.'
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
-
-      # Build and push API image
-      - name: Build and push API image
+      - name: Build & load builder stage
         uses: docker/build-push-action@v5
         with:
           context: .
-          target: runner-api
-          push: true
-          tags: ${{ steps.meta-api.outputs.tags }}
-          labels: ${{ steps.meta-api.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-           
-      # Build and push Web image
-      - name: Build and push Web image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          target: runner-web
-          push: true
-          tags: ${{ steps.meta-web.outputs.tags }}
-          labels: ${{ steps.meta-web.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          file: Dockerfile
+          target: builder
+          platforms: linux/amd64
+          load: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ needs.prepare.outputs.ENV_TAG }}
 
-      # build and push mqtt-influxdb-service image
-      - name: Build and push mqtt-influxdb-service image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          target: runner-mqtt-influxdb-service
-          push: true
-          tags: ${{ steps.meta-mqtt-influxdb-service.outputs.tags }}
-          labels: ${{ steps.meta-mqtt-influxdb-service.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Sauvegarder l'image builder en tar
+        run: |
+          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ needs.prepare.outputs.ENV_TAG }} \
+            | gzip > builder.tar.gz
 
-      # build and push data-simulator image
-      - name: Build and push data-simulator image
+      - name: Upload de l'artefact builder
+        uses: actions/upload-artifact@v4
+        with:
+          name: builder-image
+          path: builder.tar.gz
+          retention-days: 1
+
+  build-and-publish:
+    name: Build & Push des services
+    needs:
+      - prepare
+      - build-builder
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: ecowatch-api
+            target: runner-api
+          - service: ecowatch-web
+            target: runner-web
+          - service: ecowatch-mqtt-influxdb-service
+            target: runner-mqtt-influxdb-service
+          - service: ecowatch-data-simulator
+            target: runner-data-simulator
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Télécharger l'artefact builder
+        uses: actions/download-artifact@v4
+        with:
+          name: builder-image
+
+      - name: Charger l'image builder
+        run: docker load -i builder.tar.gz
+
+      - name: Installer Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (${{ matrix.service }})
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}
+          tags: |
+            type=raw,value=${{ needs.prepare.outputs.VERSION }}
+
+      - name: Build & Push ${{ matrix.service }}
         uses: docker/build-push-action@v5
         with:
           context: .
-          target: runner-data-simulator
+          file: Dockerfile
+          target: ${{ matrix.target }}
+          platforms: linux/amd64
           push: true
-          tags: ${{ steps.meta-data-simulator.outputs.tags }}
-          labels: ${{ steps.meta-data-simulator.outputs.labels }}
-          cache-from: type=gha
+          cache-from: |
+            type=docker,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/builder:${{ needs.prepare.outputs.ENV_TAG }}
+            type=gha
           cache-to: type=gha,mode=max
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

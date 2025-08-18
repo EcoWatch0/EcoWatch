@@ -17,8 +17,14 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
   },
-  "include": ["apps/**/*", "libs/**/*"],
-  "exclude": ["**/dist", "**/node_modules"]
+  "include": [
+    "apps/**/*",
+    "libs/**/*"
+  ],
+  "exclude": [
+    "**/dist",
+    "**/node_modules"
+  ],
 }
