@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "types": ["jest"],
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@ecowatch/shared": ["test/mocks/ecowatch-shared.ts"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts"
+  ]
+}
+
+

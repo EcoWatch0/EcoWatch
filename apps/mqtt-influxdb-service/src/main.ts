@@ -32,7 +32,7 @@ async function bootstrap() {
     ensureFailedMessagesDir(failedMessagesPath);
 
     // Démarrer l'application
-    await app.listen(configService.get<number>('PORT', 3002));
+    await app.listen(configService.get<number>('APP_MQTT_INFLUXDB_SERVICE_PORT', 3002));
 
     const appUrl = await app.getUrl();
     logger.log(`MQTT to InfluxDB service is running on: ${appUrl}`);
