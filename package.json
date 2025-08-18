@@ -19,12 +19,12 @@
     "env:clean": "rm -rf apps/web/.env && rm -rf apps/api-gateway/.env && rm -rf apps/mqtt-influxdb-service/.env && rm -rf apps/data-simulator/.env && rm -rf .env"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
+    "@eslint/js": "^9.25.1",
     "@nestjs/cli": "^11.0.5",
     "@types/express": "^5.0.1",
     "@types/node": "^22.14.0",
     "eslint": "^9",
-    "eslint-config-prettier": "^10.1.1",
+    "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.2.6",
     "globals": "^16.0.0",
     "jest": "^29.7.0",
@@ -33,7 +33,7 @@
     "prisma": "^6.5.0",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.2",
-    "typescript-eslint": "^8.29.0"
+    "typescript-eslint": "^8.31.1"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.3",
