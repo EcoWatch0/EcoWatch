@@ -4,9 +4,17 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "@ecowatch/shared": ["../../libs/shared/src"]
+      "@ecowatch/shared": [
+        "../../libs/shared/src"
+      ]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test"]
-} 
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test"
+  ]
+}
