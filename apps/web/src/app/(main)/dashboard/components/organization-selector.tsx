@@ -27,7 +27,7 @@ export function OrganizationSelector({ value, onChange }: { value?: string; onCh
       }
     };
     fetchOrgs();
-  }, [api]);
+  }, [api, onChange, value]);
 
   return (
     <Select

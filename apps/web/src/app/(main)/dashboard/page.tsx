@@ -7,18 +7,14 @@ import { OrganizationSelector } from "./components/organization-selector"
 import { MetricCard } from "./components/metric-card"
 import { useState } from "react"
 import { 
-  ArrowDown, 
-  ArrowUp, 
   Droplets, 
   Leaf, 
   Thermometer, 
   Wind
 } from "lucide-react"
-import { useLatestMetric } from "@/hooks/use-latest-metric"
 
 export default function DashboardPage() {
   const [selectedOrg, setSelectedOrg] = useState<{ id: string; name: string; influxBucketName?: string } | null>(null)
-  const temp = useLatestMetric({})
   return (
     <div className="container mx-auto py-10 px-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">

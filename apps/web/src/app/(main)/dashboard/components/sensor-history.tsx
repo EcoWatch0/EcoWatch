@@ -25,7 +25,7 @@ export function SensorHistory({ sensorId, type = 'temperature', orgId, orgBucket
     fetchData();
     const id = setInterval(fetchData, 5000);
     return () => clearInterval(id);
-  }, [api, sensorId, type]);
+  }, [api, sensorId, type, orgId, orgBucket]);
 
   return (
     <div style={{ width: '100%', height: 300 }}>
