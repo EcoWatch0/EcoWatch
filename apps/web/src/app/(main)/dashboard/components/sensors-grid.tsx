@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getCookie } from 'cookies-next';
 import { SensorHistory } from './sensor-history';
 
 type Sensor = { id: string; name: string; type: string };
@@ -12,7 +13,11 @@ export function SensorsGrid() {
   useEffect(() => {
     const fetchSensors = async () => {
       try {
-        const res = await fetch(`${api}/sensors`, { cache: 'no-store' });
+        const token = getCookie('token') as string | undefined;
+        const res = await fetch(`${api}/sensors`, {
+          cache: 'no-store',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         const json = await res.json();
         setSensors(Array.isArray(json) ? json : []);
       } catch {

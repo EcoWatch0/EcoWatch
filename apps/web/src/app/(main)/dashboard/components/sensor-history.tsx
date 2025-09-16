@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { getCookie } from 'cookies-next';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function SensorHistory({ sensorId, type = 'temperature' }: { sensorId: string; type?: string }) {
@@ -9,7 +10,11 @@ export function SensorHistory({ sensorId, type = 'temperature' }: { sensorId: st
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`${api}/metrics/sensors/${sensorId}/history?type=${type}&range=-2h`, { cache: 'no-store' });
+        const token = getCookie('token') as string | undefined;
+        const res = await fetch(`${api}/metrics/sensors/${sensorId}/history?type=${type}&range=-2h`, {
+          cache: 'no-store',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         const json = await res.json();
         setData(json);
       } catch {
