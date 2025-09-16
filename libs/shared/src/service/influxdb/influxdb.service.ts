@@ -23,8 +23,8 @@ export class InfluxDBService implements OnModuleDestroy {
       this.logger.error('InfluxDB token is missing or empty!');
     }
 
-    this.client = new InfluxDB({ url: this.config.url, token: this.config.token });
-    this.writeApi = this.client.getWriteApi(this.config.org, this.config.bucket);
+    this.client = new InfluxDB({ url: config.url, token: config.token });
+    this.writeApi = this.client.getWriteApi(config.org, config.bucket);
   }
 
   /**
@@ -67,8 +67,7 @@ export class InfluxDBService implements OnModuleDestroy {
   }
 
   async query(fluxQuery: string) {
-    const orgForQuery = this.config.orgId || this.config.org;
-    const queryApi = this.client.getQueryApi(orgForQuery);
+    const queryApi = this.client.getQueryApi(this.config.orgId);
     try {
       return await queryApi.collectRows(fluxQuery);
     } catch (error) {
