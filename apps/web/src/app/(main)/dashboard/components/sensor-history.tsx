@@ -12,8 +12,8 @@ export function SensorHistory({ sensorId, type = 'temperature' }: { sensorId: st
         const res = await fetch(`${api}/metrics/sensors/${sensorId}/history?type=${type}&range=-2h`, { cache: 'no-store' });
         const json = await res.json();
         setData(json);
-      } catch (e) {
-        // ignore
+      } catch {
+        /* noop */
       }
     };
     fetchData();
