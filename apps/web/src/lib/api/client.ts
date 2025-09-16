@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/lib/env"
+import { getApiBaseUrl } from "@/lib/env"
 import { getCookie } from "cookies-next"
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
@@ -39,7 +39,8 @@ export async function fetchJson<TResponse>(path: string, options: FetchJsonOptio
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 10_000)
 
   try {
-    const url = path.startsWith("http") ? path : `${API_BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`
+    const base = getApiBaseUrl()
+    const url = path.startsWith("http") ? path : `${base}${path.startsWith("/") ? "" : "/"}${path}`
 
     const headers: Record<string, string> = {
       ...(options.headers ?? {}),
