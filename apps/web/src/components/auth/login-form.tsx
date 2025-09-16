@@ -45,7 +45,7 @@ export function LoginForm() {
                 <Input type="email" placeholder="exemple@email.com" {...field} />
               </FormControl>
               <FormDescription>
-                Utilisez l'email de votre compte.
+                Utilisez l&apos;email de votre compte.
               </FormDescription>
               <FormMessage />
             </FormItem>

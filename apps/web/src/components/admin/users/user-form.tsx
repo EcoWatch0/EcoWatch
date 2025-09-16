@@ -9,8 +9,8 @@ import { type UserCreateSchema, userCreateSchema, type UserUpdateSchema, userUpd
 
 type Mode = "create" | "edit"
 
-export interface UserFormValuesCreate extends UserCreateSchema {}
-export interface UserFormValuesUpdate extends UserUpdateSchema {}
+export type UserFormValuesCreate = UserCreateSchema
+export type UserFormValuesUpdate = UserUpdateSchema
 
 export function UserForm({
   mode,
@@ -32,7 +32,7 @@ export function UserForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(async (vals) => { await onSubmit(vals) })} className="space-y-4">
+      <form onSubmit={form.handleSubmit(async (vals: UserFormValuesCreate | UserFormValuesUpdate) => { await onSubmit(vals) })} className="space-y-4">
         <FormField
           control={form.control}
           name="name"

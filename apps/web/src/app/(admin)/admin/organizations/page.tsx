@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Search, Plus } from "lucide-react"
 import { useOrganizations, useCreateOrganization, useDeleteOrganization, useOrganizationMembers } from "@/hooks/queries/organizations"
-import type { Organization } from "@/lib/api/organizations"
+import type { Organization, OrganizationMember } from "@/lib/api/organizations"
 import { OrganizationForm } from "@/components/admin/organizations/org-form"
 import { toast } from "sonner"
 
@@ -23,10 +23,10 @@ export default function OrganizationsPage() {
   const membersQuery = useOrganizationMembers(selectedId ?? "")
 
   const filtered: Organization[] = useMemo(() => {
-    const list = data ?? []
+    const list: Organization[] = (data ?? []) as Organization[]
     const q = query.trim().toLowerCase()
     if (!q) return list
-    return list.filter((o) => o.name.toLowerCase().includes(q))
+    return list.filter((o: Organization) => o.name.toLowerCase().includes(q))
   }, [data, query])
 
   return (
@@ -73,7 +73,7 @@ export default function OrganizationsPage() {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative w-full sm:w-1/3">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Rechercher une organisation..." className="w-full pl-8" value={query} onChange={(e) => setQuery(e.target.value)} />
+              <Input type="search" placeholder="Rechercher une organisation..." className="w-full pl-8" value={query} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} />
             </div>
           </div>
         </CardContent>
@@ -141,7 +141,7 @@ export default function OrganizationsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Membres</CardTitle>
-            <CardDescription>Membres de l'organisation sélectionnée</CardDescription>
+            <CardDescription>Membres de l&apos;organisation sélectionnée</CardDescription>
           </CardHeader>
           <CardContent>
             {membersQuery.isLoading ? (
@@ -152,7 +152,7 @@ export default function OrganizationsPage() {
               <div className="text-sm text-muted-foreground">Aucun membre</div>
             ) : (
               <ul className="space-y-2">
-                {membersQuery.data?.map((m) => (
+                {(membersQuery.data as OrganizationMember[] | undefined)?.map((m: OrganizationMember) => (
                   <li key={m.id} className="text-sm">
                     {m.name ?? m.email} — {m.role}
                   </li>

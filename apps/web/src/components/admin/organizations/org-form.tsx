@@ -9,8 +9,8 @@ import { type OrganizationCreateSchema, organizationCreateSchema, type Organizat
 
 type Mode = "create" | "edit"
 
-export interface OrgFormValuesCreate extends OrganizationCreateSchema {}
-export interface OrgFormValuesUpdate extends OrganizationUpdateSchema {}
+export type OrgFormValuesCreate = OrganizationCreateSchema
+export type OrgFormValuesUpdate = OrganizationUpdateSchema
 
 export function OrganizationForm({
   mode,
@@ -32,7 +32,7 @@ export function OrganizationForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(async (vals) => { await onSubmit(vals) })} className="space-y-4">
+      <form onSubmit={form.handleSubmit(async (vals: OrgFormValuesCreate | OrgFormValuesUpdate) => { await onSubmit(vals) })} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
