@@ -1,67 +1,46 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { BarChart, Home, Leaf, Shield, Settings, LayoutDashboard, Users, Building, FileBarChart } from "lucide-react"
+import { BarChart, Home, Leaf, Shield, Users, Building } from "lucide-react"
 
-// Routes principales de l'application
-export const mainRoutes = [
-  {
-    href: "/",
-    label: "Accueil",
-    icon: Home
-  },
-  {
-    href: "/dashboard",
-    label: "Tableau de bord",
-    icon: BarChart
-  },
-  {
-    href: "/application",
-    label: "Application",
-    icon: Leaf
-  },
-  {
-    href: "/settings",
-    label: "Paramètres",
-    icon: Settings
-  }
-]
+type RouteItem = {
+  href: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+}
 
-// Routes pour la section admin
-export const adminRoutes = [
-  {
-    href: "/admin",
-    label: "Dashboard",
-    icon: LayoutDashboard
-  },
-  {
-    href: "/admin/users",
-    label: "Utilisateurs",
-    icon: Users
-  },
-  {
-    href: "/admin/organizations",
-    label: "Organisations",
-    icon: Building
-  },
-  {
-    href: "/admin/settings",
-    label: "Paramètres",
-    icon: Settings
-  }
-]
+const MAIN_ROUTES: readonly RouteItem[] = [
+  { href: "/", label: "Accueil", icon: Home },
+  { href: "/dashboard", label: "Tableau de bord", icon: BarChart },
+] as const
 
-// Fonction pour déterminer le mode actuel (admin ou application)
+const ADMIN_ROUTES: readonly RouteItem[] = [
+  { href: "/admin/users", label: "Utilisateurs", icon: Users },
+  { href: "/admin/organizations", label: "Organisations", icon: Building },
+] as const
+
+export type NavigationSection = "main" | "admin"
+
+function computeSection(pathname: string): NavigationSection {
+  return pathname.startsWith("/admin") ? "admin" : "main"
+}
+
 export function useNavigationMode() {
   const pathname = usePathname()
-  const isAdmin = pathname.startsWith("/admin")
-  
+  const section = computeSection(pathname)
+  const isAdmin = section === "admin"
+  const routes = (isAdmin ? ADMIN_ROUTES : MAIN_ROUTES).map((r) => ({
+    ...r,
+    // Active if exact or under the subtree
+    active: pathname === r.href || pathname.startsWith(`${r.href}/`),
+  }))
+
   return {
     isAdmin,
-    routes: isAdmin ? adminRoutes : mainRoutes,
+    routes,
     switchLabel: isAdmin ? "Application" : "Admin",
     switchIcon: isAdmin ? Leaf : Shield,
     switchHref: isAdmin ? "/" : "/admin",
-    title: isAdmin ? "EcoWatch Admin" : "EcoWatch"
+    title: isAdmin ? "EcoWatch Admin" : "EcoWatch",
   }
-} 
+}
