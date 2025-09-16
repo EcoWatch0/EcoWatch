@@ -19,6 +19,11 @@ export class SensorController {
         ...(orgId ? { organizationId: orgId } : {}),
       },
       orderBy: { createdAt: 'desc' },
+      include: {
+        organization: {
+          select: { influxBucketName: true }
+        }
+      }
     } as any);
 
     return sensors.map((s: any) => ({
@@ -27,6 +32,7 @@ export class SensorController {
       type: s.type,
       organizationId: s.organizationId,
       isActive: s.isActive,
+      orgBucket: s.organization?.influxBucketName
     }));
   }
 }
