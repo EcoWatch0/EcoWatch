@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "dev": "pnpm --parallel -r run dev",
-    "build": "pnpm --parallel -r run build",
+    "build": "pnpm --filter shared build && pnpm --parallel -r run build",
     "start": "pnpm --parallel -r run start",
     "lint": "pnpm --parallel -r run lint",
     "test": "pnpm --parallel -r run test",
