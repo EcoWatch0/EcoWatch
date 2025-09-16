@@ -97,8 +97,8 @@ services:
       - NODE_ENV=production
       - MQTT_BROKER_URL=mqtt://rabbitmq:1883
       - MQTT_CLIENT_ID=eco-watch-data-simulator
-      - SIMULATION_INTERVAL_MS=5000
-      - SENSORS_COUNT=5
+      - DATA_FAKER_INTERVAL_MS=5000
+      - DATA_FAKER_SENSORS_COUNT=5
     depends_on:
       - rabbitmq
     networks:
@@ -111,17 +111,18 @@ services:
       target: runner-mqtt-influxdb-service
       dockerfile: Dockerfile
     image: code0ex/ecowatch-data-influxdb:latest
-    ports:
-      - "3200:3200"
+    # ports:
+    #   - "3002:3002"
     environment:
       - NODE_ENV=production
-      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - MQTT_BROKER_URL=mqtt://rabbitmq:1883
       - MQTT_CLIENT_ID=mqtt-influxdb-service
       - MQTT_TOPIC=ecowatch/#
       - INFLUXDB_URL=http://influxdb:8086
       - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
       - INFLUXDB_ORG=${INFLUXDB_ORG}
       - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+      # - APP_MQTT_INFLUXDB_SERVICE_PORT=3002
     depends_on:
       - rabbitmq
       - influxdb

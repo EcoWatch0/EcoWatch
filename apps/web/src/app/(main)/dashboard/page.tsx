@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { SensorHistory } from "./components/sensor-history"
 import { 
   ArrowDown, 
   ArrowUp, 
@@ -119,15 +120,10 @@ export default function DashboardPage() {
           {/* Main Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Tendances environnementales</CardTitle>
-              <CardDescription>
-                Evolution des paramètres clés sur les 30 derniers jours
-              </CardDescription>
+              <CardTitle>Température (2h)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px] w-full bg-muted/20 rounded-md flex items-center justify-center">
-                <p className="text-muted-foreground">Graphique de tendances environnementales</p>
-              </div>
+              <SensorHistory sensorId="sensor-1" type="temperature" />
             </CardContent>
           </Card>
 
