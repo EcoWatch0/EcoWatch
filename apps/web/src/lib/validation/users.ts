@@ -2,9 +2,9 @@ import { z } from "zod"
 
 export const userCreateSchema = z.object({
   email: z.string().email(),
-  name: z.string().min(1),
-  role: z.enum(["ADMIN", "OPERATOR", "USER"]),
-  password: z.string().min(6),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  password: z.string().min(8),
 })
 
 export const userUpdateSchema = userCreateSchema.partial().extend({ password: z.string().min(6).optional() })

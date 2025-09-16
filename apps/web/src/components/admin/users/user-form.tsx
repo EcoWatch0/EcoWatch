@@ -35,7 +35,21 @@ export function UserForm({
       <form onSubmit={form.handleSubmit(async (vals: UserFormValuesCreate | UserFormValuesUpdate) => { await onSubmit(vals) })} className="space-y-4">
         <FormField
           control={form.control}
-          name="name"
+          name="firstName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Prénom</FormLabel>
+              <FormControl>
+                <Input placeholder="Nom complet" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="lastName"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nom</FormLabel>
@@ -55,20 +69,6 @@ export function UserForm({
               <FormLabel>Email</FormLabel>
               <FormControl>
                 <Input type="email" placeholder="email@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Rôle</FormLabel>
-              <FormControl>
-                <Input placeholder="ADMIN | OPERATOR | USER" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

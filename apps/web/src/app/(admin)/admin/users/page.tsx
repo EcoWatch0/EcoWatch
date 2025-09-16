@@ -24,7 +24,7 @@ export default function UsersPage() {
     const list = data ?? []
     const q = query.trim().toLowerCase()
     if (!q) return list
-    return list.filter((u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+    return list.filter((u) => u.firstName.toLowerCase().includes(q) || u.lastName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
   }, [data, query])
 
   return (
@@ -102,7 +102,7 @@ export default function UsersPage() {
               <TableBody>
                 {filtered.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell className="font-medium">{user.firstName} {user.lastName}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.role}</TableCell>
                     <TableCell className="text-right">

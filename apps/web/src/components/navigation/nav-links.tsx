@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { BarChart, Home, Leaf, Shield, Settings, LayoutDashboard, Users } from "lucide-react"
+import { BarChart, Home, Leaf, Shield, Settings, LayoutDashboard, Users, Building, FileBarChart } from "lucide-react"
 
 // Routes principales de l'application
 export const mainRoutes = [
@@ -38,6 +38,11 @@ export const adminRoutes = [
     href: "/admin/users",
     label: "Utilisateurs",
     icon: Users
+  },
+  {
+    href: "/admin/organizations",
+    label: "Organisations",
+    icon: Building
   },
   {
     href: "/admin/settings",

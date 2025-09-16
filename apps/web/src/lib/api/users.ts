@@ -4,7 +4,8 @@ import type { Role } from "@/lib/api/auth"
 export interface User {
   id: string
   email: string
-  name: string
+  firstName: string
+  lastName: string
   role: Role
   createdAt?: string
   updatedAt?: string
@@ -12,14 +13,15 @@ export interface User {
 
 export interface CreateUserInput {
   email: string
-  name: string
-  role: Role
+  firstName: string
+  lastName: string
   password: string
 }
 
 export interface UpdateUserInput {
   email?: string
-  name?: string
+  firstName?: string
+  lastName?: string
   role?: Role
   password?: string
 }
