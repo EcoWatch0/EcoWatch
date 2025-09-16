@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
-import { UserInboundCreateDto, UserInboundDto, UserInboundProperties } from './dto/user-inbound.dto';
-import { UserRole } from '@prisma/client';
+import { UserInboundCreateDto, UserInboundDto, UserInboundProperties, UserRole } from './dto/user-inbound.dto';
 import { UsersService } from '@ecowatch/shared';
 
 @Injectable()

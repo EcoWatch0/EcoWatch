@@ -1,5 +1,9 @@
 import { Exclude, Expose } from 'class-transformer';
-import { UserRole } from '@prisma/client';
+export enum UserRole {
+    ADMIN = 'ADMIN',
+    OPERATOR = 'OPERATOR',
+    USER = 'USER',
+}
 import { IsEmail, IsEnum, IsNotEmpty, IsString, MinLength, IsDate } from 'class-validator';
 import { PartialType } from '@nestjs/swagger';
 

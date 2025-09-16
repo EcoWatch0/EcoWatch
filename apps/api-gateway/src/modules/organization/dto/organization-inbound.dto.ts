@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { OmitType, PartialType } from '@nestjs/swagger';
-import { OrganizationMembership, User } from '@prisma/client';
+// Avoid importing Prisma types in DTOs to keep tests decoupled from generated client
 
 export class OrganizationInboundProperties {
     @Expose()
@@ -28,9 +28,11 @@ export class OrganizationInboundProperties {
     updatedAt: Date;
 
     @Expose()
-    memberships?: (OrganizationMembership & {
-        user: User;
-    })[];
+    memberships?: Array<{
+        user: { id: string; email: string; firstName: string; lastName: string; role: string };
+        role: string;
+        joinedAt: Date;
+    }>;
 }
 
 export class OrganizationInboundDto extends PartialType(OmitType(OrganizationInboundProperties, ['memberships', 'createdAt', 'updatedAt'])) {}

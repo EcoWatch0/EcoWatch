@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UserService } from './user.service';
 import { UsersService } from '@ecowatch/shared';
-import { UserRole } from '@prisma/client';
+import { UserRole } from './dto/user-inbound.dto';
 
 jest.mock('bcrypt');
 
