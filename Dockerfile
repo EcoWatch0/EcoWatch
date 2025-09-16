@@ -91,5 +91,8 @@ COPY --chown=nextjs:nodejs --from=builder /app/apps/mqtt-influxdb-service/node_m
 COPY --chown=nextjs:nodejs --from=builder /app/libs/shared/node_modules                ./libs/shared/node_modules
 COPY --chown=nextjs:nodejs --from=builder /app/libs/shared                             ./libs/shared
 
+RUN mkdir -p /app/failed-messages
+RUN chown -R nextjs:nodejs /app/failed-messages
+
 USER nextjs
 CMD ["node", "apps/mqtt-influxdb-service/dist/main.js"]
