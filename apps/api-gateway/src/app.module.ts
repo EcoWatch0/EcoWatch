@@ -5,9 +5,10 @@ import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
+import { SensorModule } from './modules/sensor/sensor.module';
 
 @Module({
-  imports: [UserModule, AuthModule, OrganizationModule, MetricsModule],
+  imports: [UserModule, AuthModule, OrganizationModule, MetricsModule, SensorModule],
   controllers: [AppController],
   providers: [AppService],
 })

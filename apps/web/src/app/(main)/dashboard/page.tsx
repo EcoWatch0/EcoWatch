@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { SensorHistory } from "./components/sensor-history"
+import { SensorsGrid } from "./components/sensors-grid"
 import { 
   ArrowDown, 
   ArrowUp, 
@@ -118,14 +118,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Main Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Température (2h)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SensorHistory sensorId="sensor-1" type="temperature" />
-            </CardContent>
-          </Card>
+          <SensorsGrid />
 
           {/* Environmental Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
