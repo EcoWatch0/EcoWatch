@@ -12,6 +12,7 @@ import {
   Thermometer, 
   Wind
 } from "lucide-react"
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 export default function DashboardPage() {
   const [selectedOrg, setSelectedOrg] = useState<{ id: string; name: string; influxBucketName?: string } | null>(null)
@@ -81,8 +82,15 @@ export default function DashboardPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="h-[200px] w-full bg-muted/20 rounded-md flex items-center justify-center">
-                  <p className="text-muted-foreground">Graphique de température</p>
+                <div className="h-[200px] w-full">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={[{ t: "10:00", v: 20 }, { t: "10:05", v: 21 }, { t: "10:10", v: 19 }, { t: "10:15", v: 22 }]}>
+                      <XAxis dataKey="t" hide={false} tick={{ fontSize: 12 }} />
+                      <YAxis domain={[0, 40]} tick={{ fontSize: 12 }} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="v" stroke="#f97316" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
