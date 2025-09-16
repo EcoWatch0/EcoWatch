@@ -108,7 +108,11 @@ export function RegisterForm() {
     setServerError('');
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        throw new Error('API_URL n\'est pas configuré');
+      }
+      const response = await fetch(`${apiUrl}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -5,11 +5,13 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule, UsersModule } from '@ecowatch/shared';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { UserModule } from '../modules/user/user.module';
 
 @Module({
   imports: [
     PrismaModule,
     UsersModule,
+    UserModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-secret-key',
