@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { getCookie } from 'cookies-next';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-export function SensorHistory({ sensorId, type = 'temperature' }: { sensorId: string; type?: string }) {
+export function SensorHistory({ sensorId, type = 'temperature', orgId }: { sensorId: string; type?: string; orgId?: string }) {
   const [data, setData] = useState<{ time: string; value: number }[]>([]);
   const api = process.env.NEXT_PUBLIC_API_URL;
 
@@ -11,7 +11,8 @@ export function SensorHistory({ sensorId, type = 'temperature' }: { sensorId: st
     const fetchData = async () => {
       try {
         const token = getCookie('token') as string | undefined;
-        const res = await fetch(`${api}/metrics/sensors/${sensorId}/history?type=${type}&range=-2h`, {
+        const params = new URLSearchParams({ type, range: '-2h', ...(orgId ? { orgId } : {}) });
+        const res = await fetch(`${api}/metrics/sensors/${sensorId}/history?${params.toString()}`, {
           cache: 'no-store',
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });

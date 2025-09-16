@@ -11,14 +11,17 @@ export class MetricsController {
     @Query('type') type = 'temperature',
     @Query('range') range = '-24h',
     @Query('orgBucket') orgBucket?: string,
+    @Query('orgId') orgId?: string,
   ) {
     const measurement = `sensor_${type.toLowerCase()}`;
     const bucket = orgBucket || process.env.INFLUXDB_BUCKET!;
+    const orgFilter = orgId ? `
+          |> filter(fn: (r) => r.organization_id == "${orgId}")` : '';
     const flux = `
         from(bucket: "${bucket}")
           |> range(start: ${range})
           |> filter(fn: (r) => r._measurement == "${measurement}")
-          |> filter(fn: (r) => r.sensor_id == "${sensorId}")
+          |> filter(fn: (r) => r.sensor_id == "${sensorId}")${orgFilter}
           |> filter(fn: (r) => r._field == "value")
           |> keep(columns: ["_time", "_value", "unit", "type"])
           |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)

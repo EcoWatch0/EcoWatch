@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getCookie } from 'cookies-next';
 import { SensorHistory } from './sensor-history';
 
-type Sensor = { id: string; name: string; type: string };
+type Sensor = { id: string; name: string; type: string; organizationId?: string };
 
 export function SensorsGrid() {
   const [sensors, setSensors] = useState<Sensor[]>([]);
@@ -52,7 +52,7 @@ export function SensorsGrid() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <SensorHistory sensorId={sensor.id} type={sensor.type.toLowerCase()} />
+            <SensorHistory sensorId={sensor.id} type={sensor.type.toLowerCase()} orgId={sensor.organizationId} />
           </CardContent>
         </Card>
       ))}
