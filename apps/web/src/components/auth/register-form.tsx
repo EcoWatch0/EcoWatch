@@ -108,11 +108,12 @@ export function RegisterForm() {
     setServerError('');
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiUrl) {
+      const apiEnv = process.env.NEXT_PUBLIC_API_URL;
+      const apiBase = apiEnv || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3001/api` : '');
+      if (!apiBase) {
         throw new Error('API_URL n\'est pas configuré');
       }
-      const response = await fetch(`${apiUrl}/auth/register`, {
+      const response = await fetch(`${apiBase}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,9 +126,15 @@ export function RegisterForm() {
         }),
       });
 
+      const contentType = response.headers.get('content-type') || '';
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Échec de l\'inscription');
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          throw new Error(data.message || 'Échec de l\'inscription');
+        } else {
+          const text = await response.text();
+          throw new Error(text || `Échec de l'inscription (HTTP ${response.status})`);
+        }
       }
 
       // Redirection vers la page de connexion après inscription réussie
