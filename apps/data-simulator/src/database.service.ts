@@ -138,45 +138,45 @@ export class DatabaseService {
      */
     async createTestSensors() {
         try {
-            // Vérifier s'il y a des capteurs existants
+            // Helpers
+            const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+            const randomInt = (min: number, max: number) => Math.floor(randomInRange(min, max + 1));
+            const randomChoice = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+            const parseBBoxEnv = () => {
+                const raw = process.env.DATA_FAKER_CITY_BBOX;
+                if (!raw) return { latMin: 48.80, lngMin: 2.28, latMax: 48.90, lngMax: 2.41 };
+                const parts = raw.split(',').map(p => Number(p.trim()));
+                if (parts.length !== 4 || parts.some(p => !Number.isFinite(p))) {
+                    return { latMin: 48.80, lngMin: 2.28, latMax: 48.90, lngMax: 2.41 };
+                }
+                const [latMin, lngMin, latMax, lngMax] = parts;
+                return { latMin, lngMin, latMax, lngMax };
+            };
+
+            const bbox = parseBBoxEnv();
+
             const existingSensors = await this.sensorsService.count({});
-            if (existingSensors > 0) {
-                console.log(`Found ${existingSensors} existing sensors, skipping creation`);
-                return;
-            }
+            console.log(`Existing sensors in DB: ${existingSensors}`);
 
-            console.log('No sensors found, creating test sensors...');
+            // Récupérer toutes les organisations
+            let orgs = await this.organisationsService.findMany({});
 
-            // Créer une organisation de test si elle n'existe pas
-            let testOrg = await this.organisationsService.findUnique({
-                where: { id: 'test-org-1' }
-            });
-
-            if (!testOrg) {
-                console.log('Creating test organization...');
-
-                // Étape 1: Créer l'organisation avec statut PENDING
-                testOrg = await this.organisationsService.create({
+            // Si aucune organisation: en créer une de test (comme avant)
+            if (!orgs || orgs.length === 0) {
+                console.log('No organizations found, creating a test organization...');
+                const created = await this.organisationsService.create({
                     data: {
                         id: 'test-org-1',
                         name: 'Test Organization',
                         bucketSyncStatus: 'PENDING',
                     }
                 });
-
-                // Étape 2: Créer le bucket InfluxDB via le service
-                console.log('Creating InfluxDB bucket for test organization...');
-                await this.organisationsService.update({
-                    where: { id: testOrg.id },
-                    data: { bucketSyncStatus: 'CREATING' }
-                });
-
-                const bucketResult = await this.createInfluxBucket(testOrg.id);
-
+                // Créer le bucket
+                await this.organisationsService.update({ where: { id: created.id }, data: { bucketSyncStatus: 'CREATING' } });
+                const bucketResult = await this.createInfluxBucket(created.id);
                 if (bucketResult.success) {
-                    // Étape 3: Mettre à jour l'organisation avec les infos du bucket
-                    testOrg = await this.organisationsService.update({
-                        where: { id: testOrg.id },
+                    await this.organisationsService.update({
+                        where: { id: created.id },
                         data: {
                             influxBucketName: bucketResult.bucketName,
                             influxBucketId: bucketResult.bucketId,
@@ -186,80 +186,78 @@ export class DatabaseService {
                             bucketRetentionDays: 90
                         }
                     });
-                    console.log(`✅ Test organization created with active bucket: ${bucketResult.bucketName}`);
                 } else {
-                    // En cas d'erreur, marquer comme ERROR
-                    await this.organisationsService.update({
-                        where: { id: testOrg.id },
-                        data: { bucketSyncStatus: 'ERROR' }
-                    });
+                    await this.organisationsService.update({ where: { id: created.id }, data: { bucketSyncStatus: 'ERROR' } });
                     throw new Error(`Failed to create bucket: ${bucketResult.error}`);
                 }
-            } else {
-                console.log('Test organization already exists');
+                orgs = [created];
             }
 
-            // Créer plusieurs capteurs de test
-            const testSensors = [
-                {
-                    id: 'sensor-temp-001',
-                    name: 'Temperature Sensor Campus A',
-                    type: SensorType.TEMPERATURE,
-                    location: 'Campus A - Building 1',
-                    latitude: 48.8566,
-                    longitude: 2.3522,
-                    isActive: true,
-                    organizationId: testOrg.id,
-                },
-                {
-                    id: 'sensor-humid-001',
-                    name: 'Humidity Sensor Campus A',
-                    type: SensorType.HUMIDITY,
-                    location: 'Campus A - Building 1',
-                    latitude: 48.8566,
-                    longitude: 2.3522,
-                    isActive: true,
-                    organizationId: testOrg.id,
-                },
-                {
-                    id: 'sensor-air-001',
-                    name: 'Air Quality Sensor Campus A',
-                    type: SensorType.AIR_QUALITY,
-                    location: 'Campus A - Building 1',
-                    latitude: 48.8566,
-                    longitude: 2.3522,
-                    isActive: true,
-                    organizationId: testOrg.id,
-                },
-                {
-                    id: 'sensor-pressure-001',
-                    name: 'Pressure Sensor Campus A',
-                    type: SensorType.PRESSURE,
-                    location: 'Campus A - Building 1',
-                    latitude: 48.8566,
-                    longitude: 2.3522,
-                    isActive: true,
-                    organizationId: testOrg.id,
-                },
-                {
-                    id: 'sensor-noise-001',
-                    name: 'Noise Level Sensor Campus A',
-                    type: SensorType.NOISE_LEVEL,
-                    location: 'Campus A - Building 1',
-                    latitude: 48.8566,
-                    longitude: 2.3522,
-                    isActive: true,
-                    organizationId: testOrg.id,
-                },
-            ];
+            // Pour chaque organisation, si aucun capteur: créer un nombre aléatoire de capteurs
+            for (const org of orgs) {
+                const countForOrg = await this.sensorsService.count({ where: { organizationId: org.id } });
+                if (countForOrg > 0) {
+                    continue;
+                }
 
-            for (const sensorData of testSensors) {
-                await this.sensorsService.create({
-                    data: sensorData
-                });
+                // S'assurer que le bucket Influx est actif
+                if (org.bucketSyncStatus !== 'ACTIVE') {
+                    console.log(`Creating Influx bucket for org ${org.id} (${org.name})`);
+                    await this.organisationsService.update({ where: { id: org.id }, data: { bucketSyncStatus: 'CREATING' } });
+                    const bucketResult = await this.createInfluxBucket(org.id);
+                    if (bucketResult.success) {
+                        await this.organisationsService.update({
+                            where: { id: org.id },
+                            data: {
+                                influxBucketName: bucketResult.bucketName,
+                                influxBucketId: bucketResult.bucketId,
+                                influxOrgId: influxdbConfig().orgId,
+                                bucketCreatedAt: new Date(),
+                                bucketSyncStatus: 'ACTIVE',
+                                bucketRetentionDays: 90
+                            }
+                        });
+                    } else {
+                        await this.organisationsService.update({ where: { id: org.id }, data: { bucketSyncStatus: 'ERROR' } });
+                        console.warn(`Failed to create bucket for org ${org.id}: ${bucketResult.error}`);
+                        continue;
+                    }
+                }
+
+                const numToCreate = randomInt(3, 8);
+                console.log(`Creating ${numToCreate} sensors for organization ${org.name} (${org.id})`);
+                const types: SensorType[] = [
+                    SensorType.TEMPERATURE,
+                    SensorType.HUMIDITY,
+                    SensorType.AIR_QUALITY,
+                    SensorType.PRESSURE,
+                    SensorType.NOISE_LEVEL,
+                ];
+
+                for (let i = 0; i < numToCreate; i++) {
+                    const type = randomChoice(types);
+                    const lat = randomInRange(bbox.latMin, bbox.latMax);
+                    const lng = randomInRange(bbox.lngMin, bbox.lngMax);
+                    const id = `sensor-${org.id}-${type.toLowerCase()}-${String(i + 1).padStart(3, '0')}`;
+                    const name = `${type.replace('_', ' ').toLowerCase()} sensor ${i + 1} - ${org.name}`;
+                    const location = `EcoWatch Zone org ${org.name}`;
+
+                    await this.sensorsService.create({
+                        data: {
+                            id,
+                            name,
+                            type,
+                            location,
+                            latitude: lat,
+                            longitude: lng,
+                            isActive: true,
+                            organizationId: org.id,
+                        }
+                    });
+                }
             }
 
-            console.log(`Created ${testSensors.length} test sensors`);
+            console.log('Sensor seeding completed');
         } catch (error) {
             console.error('Error creating test sensors:', error);
         }
