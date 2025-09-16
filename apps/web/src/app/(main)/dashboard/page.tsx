@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SensorsGrid } from "./components/sensors-grid"
 import { OrganizationSelector } from "./components/organization-selector"
+import { MetricCard } from "./components/metric-card"
 import { useState } from "react"
 import { 
   ArrowDown, 
@@ -13,9 +14,11 @@ import {
   Thermometer, 
   Wind
 } from "lucide-react"
+import { useLatestMetric } from "@/hooks/use-latest-metric"
 
 export default function DashboardPage() {
   const [selectedOrg, setSelectedOrg] = useState<{ id: string; name: string; influxBucketName?: string } | null>(null)
+  const temp = useLatestMetric({})
   return (
     <div className="container mx-auto py-10 px-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -43,25 +46,7 @@ export default function DashboardPage() {
         <TabsContent value="overview" className="space-y-6">
           {/* Overview Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Température
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold">24.5°C</div>
-                  <div className="flex items-center text-green-600">
-                    <ArrowUp className="h-4 w-4 mr-1" />
-                    <span className="text-sm">+2.1°C</span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Moyenne sur les dernières 24h
-                </p>
-              </CardContent>
-            </Card>
+            <MetricCard title="Température" orgId={selectedOrg?.id} type="temperature" icon={<Thermometer className="h-4 w-4 mr-1" />} />
 
             <Card>
               <CardHeader className="pb-2">
@@ -82,44 +67,9 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Humidité
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold">63%</div>
-                  <div className="flex items-center text-red-600">
-                    <ArrowDown className="h-4 w-4 mr-1" />
-                    <span className="text-sm">-5%</span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Relative à la moyenne saisonnière
-                </p>
-              </CardContent>
-            </Card>
+            <MetricCard title="Humidité" orgId={selectedOrg?.id} type="humidity" icon={<Droplets className="h-4 w-4 mr-1" />} />
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Niveau d&apos;eau
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold">85%</div>
-                  <div className="flex items-center text-amber-600">
-                    <Badge className="bg-amber-600">Stable</Badge>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Capacité des réservoirs
-                </p>
-              </CardContent>
-            </Card>
+            <MetricCard title="Niveau d'eau" orgId={selectedOrg?.id} type="waterQuality" icon={<Wind className="h-4 w-4 mr-1" />} />
           </div>
 
           {/* Main Chart */}
