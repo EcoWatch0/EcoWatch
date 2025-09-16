@@ -37,6 +37,25 @@ export class OrganizationService {
     return plainToInstance(OrganizationInboundProperties, organizations);
   }
 
+  async findMine(userId: string) {
+    const organizations = await this.organisationsService.findMany({
+      where: {
+        memberships: {
+          some: { userId }
+        }
+      },
+      include: {
+        memberships: false,
+      }
+    } as any);
+
+    return organizations.map((o: any) => ({
+      id: o.id,
+      name: o.name,
+      influxBucketName: o.influxBucketName,
+    }));
+  }
+
   async findOne(id: string) {
     const organization = await this.organisationsService.findOne({
       where: { id },

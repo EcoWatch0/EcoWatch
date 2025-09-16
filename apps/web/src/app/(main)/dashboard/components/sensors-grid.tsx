@@ -6,7 +6,7 @@ import { SensorHistory } from './sensor-history';
 
 type Sensor = { id: string; name: string; type: string; organizationId?: string; orgBucket?: string };
 
-export function SensorsGrid() {
+export function SensorsGrid({ orgId }: { orgId?: string }) {
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const api = process.env.NEXT_PUBLIC_API_URL;
 
@@ -14,7 +14,8 @@ export function SensorsGrid() {
     const fetchSensors = async () => {
       try {
         const token = getCookie('token') as string | undefined;
-        const res = await fetch(`${api}/sensors`, {
+        const url = orgId ? `${api}/sensors?orgId=${encodeURIComponent(orgId)}` : `${api}/sensors`;
+        const res = await fetch(url, {
           cache: 'no-store',
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
@@ -25,7 +26,7 @@ export function SensorsGrid() {
       }
     };
     fetchSensors();
-  }, [api]);
+  }, [api, orgId]);
 
   const gridCols = useMemo(() => {
     const count = sensors.length;

@@ -2,6 +2,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SensorsGrid } from "./components/sensors-grid"
+import { OrganizationSelector } from "./components/organization-selector"
+import { useState } from "react"
 import { 
   ArrowDown, 
   ArrowUp, 
@@ -12,6 +14,7 @@ import {
 } from "lucide-react"
 
 export default function DashboardPage() {
+  const [selectedOrg, setSelectedOrg] = useState<{ id: string; name: string; influxBucketName?: string } | null>(null)
   return (
     <div className="container mx-auto py-10 px-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -21,7 +24,8 @@ export default function DashboardPage() {
             Vue d&apos;ensemble des indicateurs environnementaux
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <OrganizationSelector value={selectedOrg?.id} onChange={setSelectedOrg} />
           <Badge variant="outline" className="rounded-full px-4">
             Dernière mise à jour: Il y a 5 minutes
           </Badge>
@@ -118,7 +122,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Main Chart */}
-          <SensorsGrid />
+          <SensorsGrid orgId={selectedOrg?.id} />
 
           {/* Environmental Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

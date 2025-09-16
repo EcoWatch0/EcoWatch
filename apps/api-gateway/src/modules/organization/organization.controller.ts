@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, UseGuards, Req } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -21,6 +21,12 @@ export class OrganizationController {
   @Roles(UserRole.ADMIN, UserRole.OPERATOR)
   findAll() {
     return this.organizationService.findAll();
+  }
+
+  @Get('me')
+  @Roles(UserRole.ADMIN, UserRole.OPERATOR, UserRole.USER)
+  findMine(@Req() req: any) {
+    return this.organizationService.findMine(req.user.id);
   }
 
   @Get(':id')
