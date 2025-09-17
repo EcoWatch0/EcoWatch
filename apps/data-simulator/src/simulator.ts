@@ -65,6 +65,15 @@ function parseEnvNumber(name: string, def: number): number {
   return Number.isFinite(n) ? n : def;
 }
 
+function parseEnvBool(name: string, def: boolean): boolean {
+  const raw = process.env[name];
+  if (raw === undefined) return def;
+  const val = raw.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'y', 'on'].includes(val)) return true;
+  if (['0', 'false', 'no', 'n', 'off'].includes(val)) return false;
+  return def;
+}
+
 function parseBBoxEnv(): { latMin: number; lngMin: number; latMax: number; lngMax: number } {
   const raw = process.env.DATA_FAKER_CITY_BBOX;
   if (!raw) return { latMin: 48.80, lngMin: 2.28, latMax: 48.90, lngMax: 2.41 };
@@ -360,6 +369,7 @@ export class DataSimulator {
   public generateSensorData(sensor: DatabaseSensor): EnvironmentalData | null {
     const intervalMs = dataFakerConfig().intervalMs;
     const dropRate = parseEnvNumber('DATA_FAKER_DROP_RATE', 0.005);
+    const multiMetric = parseEnvBool('DATA_FAKER_MULTI_METRIC', true);
     const now = new Date();
     const nowMs = now.getTime();
     const state = this.ensureSensorState(sensor);
@@ -408,11 +418,25 @@ export class DataSimulator {
       readings.push(reading);
     };
 
-    maybePush('temperature', 'temperature', '°C', temp);
-    maybePush('humidity', 'humidity', '%', humidity);
-    maybePush('airQuality', 'airQuality', 'CAQI', air);
-    maybePush('waterQuality', 'waterQuality', 'WQI', water);
-    maybePush('soilMoisture', 'soilMoisture', '%', soil);
+    if (multiMetric) {
+      maybePush('temperature', 'temperature', '°C', temp);
+      maybePush('humidity', 'humidity', '%', humidity);
+      maybePush('airQuality', 'airQuality', 'CAQI', air);
+      maybePush('waterQuality', 'waterQuality', 'WQI', water);
+      maybePush('soilMoisture', 'soilMoisture', '%', soil);
+    } else {
+      // Mono-mesure: aligner le type de lecture avec le type DB du capteur
+      if (sensor.type === 'TEMPERATURE') {
+        maybePush('temperature', 'temperature', '°C', temp);
+      } else if (sensor.type === 'HUMIDITY') {
+        maybePush('humidity', 'humidity', '%', humidity);
+      } else if (sensor.type === 'AIR_QUALITY') {
+        maybePush('airQuality', 'airQuality', 'CAQI', air);
+      } else if (sensor.type === 'PRESSURE' || sensor.type === 'NOISE_LEVEL') {
+        // Non supportés par le MVP: ne rien publier pour ce capteur
+        return null;
+      }
+    }
 
     // Mise à jour batterie (succès publication présumé ici, ajusté si MQTT échoue côté publisher callback non disponible ici)
     this.updateBattery(state, intervalMs, true);

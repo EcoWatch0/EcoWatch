@@ -51,6 +51,10 @@ DATA_FAKER_DROP_RATE=0.005
 
 # Décroissance de batterie en %/heure (base, modulée par capteur)
 DATA_FAKER_BATTERY_DECAY_PER_HOUR=0.2
+
+# Mode multi-métriques (par défaut: true). Mettre à false pour un seul type
+# de lecture par capteur, aligné sur son type DB (PRESSURE/NOISE ignorés)
+DATA_FAKER_MULTI_METRIC=true
 ```
 
 ## Utilisation
