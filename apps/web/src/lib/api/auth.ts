@@ -2,6 +2,7 @@ import { fetchJson } from "@/lib/api/client"
 import { setCookie, deleteCookie, getCookie } from "cookies-next"
 
 export type Role = "ADMIN" | "OPERATOR" | "USER"
+export type OrgRole = "MANAGER" | "SUPERVISOR" | "STAFF" | "CONSULTANT"
 
 export interface AuthTokens {
   access_token: string
@@ -12,6 +13,7 @@ export interface AuthUser {
   email: string
   role: Role
   name?: string
+  orgMemberships?: { organizationId: string; role: OrgRole }[]
 }
 
 export interface LoginInput {
@@ -70,9 +72,10 @@ export function decodeJwtUser(token: string): AuthUser | null {
     const id = typeof json["sub"] === "string" ? json["sub"] : undefined
     const email = typeof json["email"] === "string" ? json["email"] : undefined
     const role = typeof json["role"] === "string" ? (json["role"] as Role) : undefined
+    const orgMemberships = Array.isArray(json["orgMemberships"]) ? (json["orgMemberships"] as { organizationId: string; role: OrgRole }[]) : undefined
     if (!id || !email || !role) return null
     const name = typeof json["name"] === "string" ? json["name"] : undefined
-    return { id, email, role, name }
+    return { id, email, role, name, orgMemberships }
   } catch {
     return null
   }

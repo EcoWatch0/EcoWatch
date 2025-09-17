@@ -2,13 +2,14 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '@ecowatch/shared';
+import { PrismaService, UsersService } from '@ecowatch/shared';
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
     private usersService: UsersService,
+    private prisma: PrismaService,
   ) { }
 
   async login(loginDto: LoginDto) {
@@ -24,10 +25,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const orgMemberships = await this.prisma.organizationMembership.findMany({
+      where: { userId: user.id },
+      select: { organizationId: true, role: true },
+    });
+
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
+      orgMemberships,
     };
 
     return {
