@@ -31,9 +31,30 @@ MQTT_CLIENT_ID=eco-watch-data-simulator
 MQTT_USERNAME=
 MQTT_PASSWORD=
 
-# Simulation Configuration (via data-faker.config)
+# Simulation Configuration (via data-faker.config et variables additionnelles)
 DATA_FAKER_INTERVAL_MS=5000
 DATA_FAKER_SENSORS_COUNT=5
+
+# Paramètres additionnels du simulateur (tous optionnels, avec valeurs par défaut robustes)
+# Reproductibilité (même journée simulée à seed constant)
+DATA_FAKER_SEED=1337
+
+# Zone urbaine (bbox) pour la génération des positions (Paris par défaut)
+# Format: "latMin,lngMin,latMax,lngMax"
+DATA_FAKER_CITY_BBOX="48.80,2.28,48.90,2.41"
+
+# Taux d'anomalies par lecture (ex: 0.003 = 0.3%)
+DATA_FAKER_ANOMALY_RATE=0.003
+
+# Taux de panne de communication par tick/capteur (message omis)
+DATA_FAKER_DROP_RATE=0.005
+
+# Décroissance de batterie en %/heure (base, modulée par capteur)
+DATA_FAKER_BATTERY_DECAY_PER_HOUR=0.2
+
+# Mode multi-métriques (par défaut: true). Mettre à false pour un seul type
+# de lecture par capteur, aligné sur son type DB (PRESSURE/NOISE ignorés)
+DATA_FAKER_MULTI_METRIC=true
 ```
 
 ## Utilisation
