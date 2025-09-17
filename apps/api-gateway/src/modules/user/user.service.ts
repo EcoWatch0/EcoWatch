@@ -27,11 +27,7 @@ export class UserService {
   }
 
   async findAll() {
-    const users = await this.usersService.findMany({
-      where: {
-        role: UserRole.USER,
-      },
-    });
+    const users = await this.usersService.findMany({});
     return plainToInstance(UserInboundProperties, users);
   }
 

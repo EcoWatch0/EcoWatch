@@ -9,8 +9,8 @@ export function middleware(request: NextRequest) {
   const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
   const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(`${route}/`));
 
-  // Liste des routes protégées 
-  const protectedPrefixes = ['/dashboard', '/admin', '/application', '/settings'];
+  // Liste des routes protégées
+  const protectedPrefixes = ['/dashboard', '/admin'];
   const isProtectedRoute = protectedPrefixes.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
   // Rediriger vers login si on tente d'accéder à une route protégée sans token

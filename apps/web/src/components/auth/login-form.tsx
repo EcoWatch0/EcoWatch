@@ -1,111 +1,85 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { setCookie } from 'cookies-next';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema, type LoginSchema } from '@/lib/validation/auth';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+  const form = useForm<LoginSchema>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+    mode: 'onSubmit',
+  });
 
+  const onSubmit = async (values: LoginSchema) => {
     try {
-      // Récupérer l'URL de l'API depuis les variables d'environnement
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiUrl) {
-        throw new Error('API_URL n\'est pas configuré');
-      }
-
-      // Appeler directement l'API gateway
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Identifiants invalides');
-      }
-
-      // Récupérer les données de la réponse
-      const data = await response.json();
-      
-      // Stocker le token dans un cookie côté client
-      setCookie('token', data.access_token, {
-        maxAge: 60 * 60 * 24 * 7, // 7 jours
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-      });
-
-      // Rediriger vers le tableau de bord
+      await login(values.email, values.password);
+      toast.success('Connecté avec succès');
       router.push('/dashboard');
       router.refresh();
     } catch (err) {
-      console.error('Erreur de connexion:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
-    } finally {
-      setIsLoading(false);
+      const message = err instanceof Error ? err.message : 'Identifiants invalides';
+      toast.error(message);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="exemple@email.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="exemple@email.com" {...field} />
+              </FormControl>
+              <FormDescription>
+                Utilisez l&apos;email de votre compte.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="password">Mot de passe</Label>
-          <Button
-            variant="link"
-            className="px-0 font-normal"
-            type="button"
-            onClick={() => router.push('/forgot-password')}
-          >
-            Mot de passe oublié?
-          </Button>
-        </div>
-        <Input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
+
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center justify-between">
+                <FormLabel>Mot de passe</FormLabel>
+                <Button
+                  variant="link"
+                  className="px-0 font-normal"
+                  type="button"
+                  onClick={() => router.push('/forgot-password')}
+                >
+                  Mot de passe oublié?
+                </Button>
+              </div>
+              <FormControl>
+                <Input type="password" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Connexion en cours...' : 'Se connecter'}
-      </Button>
-    </form>
+
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? 'Connexion en cours...' : 'Se connecter'}
+        </Button>
+      </form>
+    </Form>
   );
-} 
+}

@@ -2,55 +2,57 @@
 
 import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Search, UserPlus } from "lucide-react"
-import { useUsers, useCreateUser, useDeleteUser } from "@/hooks/queries/users"
-import type { User } from "@/lib/api/users"
-import { UserForm } from "@/components/admin/users/user-form"
+import { MoreHorizontal, Search, Plus } from "lucide-react"
+import { useOrganizations, useCreateOrganization, useDeleteOrganization, useOrganizationMembers } from "@/hooks/queries/organizations"
+import type { Organization, OrganizationMember } from "@/lib/api/organizations"
+import { OrganizationForm } from "@/components/admin/organizations/org-form"
 import { toast } from "sonner"
 
-export default function UsersPage() {
-  const { data, isLoading, isError } = useUsers()
-  const createMutation = useCreateUser()
-  const deleteMutation = useDeleteUser()
+export default function OrganizationsPage() {
+  const { data, isLoading, isError } = useOrganizations()
+  const createMutation = useCreateOrganization()
+  const deleteMutation = useDeleteOrganization()
   const [query, setQuery] = useState("")
   const [openCreate, setOpenCreate] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const membersQuery = useOrganizationMembers(selectedId ?? "")
 
-  const filtered: User[] = useMemo(() => {
-    const list = data ?? []
+  const filtered: Organization[] = useMemo(() => {
+    const list: Organization[] = (data ?? []) as Organization[]
     const q = query.trim().toLowerCase()
     if (!q) return list
-    return list.filter((u) => u.firstName.toLowerCase().includes(q) || u.lastName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+    return list.filter((o: Organization) => o.name.toLowerCase().includes(q))
   }, [data, query])
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4 sm:items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Gestion des utilisateurs</h2>
-          <p className="text-muted-foreground">Gérez les utilisateurs et leurs permissions</p>
+          <h2 className="text-3xl font-bold tracking-tight">Organisations</h2>
+          <p className="text-muted-foreground">Gérez les organisations et leurs membres</p>
         </div>
         <Dialog open={openCreate} onOpenChange={setOpenCreate}>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Ajouter un utilisateur
+              <Plus className="mr-2 h-4 w-4" />
+              Ajouter une organisation
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Créer un utilisateur</DialogTitle>
+              <DialogTitle>Créer une organisation</DialogTitle>
             </DialogHeader>
-            <UserForm
+            <OrganizationForm
               mode="create"
               onSubmit={async (values) => {
                 try {
                   await createMutation.mutateAsync(values as never)
-                  toast.success("Utilisateur créé")
+                  toast.success("Organisation créée")
                   setOpenCreate(false)
                 } catch (e) {
                   const message = e instanceof Error ? e.message : "Erreur lors de la création"
@@ -64,14 +66,14 @@ export default function UsersPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Filtres et recherche</CardTitle>
-          <CardDescription>Affinez la liste des utilisateurs</CardDescription>
+          <CardTitle>Recherche</CardTitle>
+          <CardDescription>Affinez la liste des organisations</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative w-full sm:w-1/3">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Rechercher un utilisateur..." className="w-full pl-8" value={query} onChange={(e) => setQuery(e.target.value)} />
+              <Input type="search" placeholder="Rechercher une organisation..." className="w-full pl-8" value={query} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} />
             </div>
           </div>
         </CardContent>
@@ -79,8 +81,8 @@ export default function UsersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Utilisateurs</CardTitle>
-          <CardDescription>Liste de tous les utilisateurs et leurs informations</CardDescription>
+          <CardTitle>Liste des organisations</CardTitle>
+          <CardDescription>Toutes les organisations</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -88,23 +90,21 @@ export default function UsersPage() {
           ) : isError ? (
             <div className="text-sm text-destructive">Erreur lors du chargement</div>
           ) : filtered.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Aucun utilisateur trouvé</div>
+            <div className="text-sm text-muted-foreground">Aucune organisation trouvée</div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Nom</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôle</TableHead>
+                  <TableHead>Description</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.firstName} {user.lastName}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role}</TableCell>
+                {filtered.map((org) => (
+                  <TableRow key={org.id}>
+                    <TableCell className="font-medium">{org.name}</TableCell>
+                    <TableCell>{org.description}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -115,13 +115,12 @@ export default function UsersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          {/* Edit action could open a dialog with UserForm in edit mode */}
-                          {/* <DropdownMenuItem>Modifier</DropdownMenuItem> */}
+                          <DropdownMenuItem onClick={() => setSelectedId(org.id)}>Voir les membres</DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-red-600" onClick={async () => {
                             try {
-                              await deleteMutation.mutateAsync(user.id)
-                              toast.success("Utilisateur supprimé")
+                              await deleteMutation.mutateAsync(org.id)
+                              toast.success("Organisation supprimée")
                             } catch (e) {
                               const message = e instanceof Error ? e.message : "Erreur lors de la suppression"
                               toast.error(message)
@@ -136,10 +135,34 @@ export default function UsersPage() {
             </Table>
           )}
         </CardContent>
-        <CardFooter className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{filtered.length} utilisateurs</p>
-        </CardFooter>
       </Card>
+
+      {selectedId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Membres</CardTitle>
+            <CardDescription>Membres de l&apos;organisation sélectionnée</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {membersQuery.isLoading ? (
+              <div className="text-sm text-muted-foreground">Chargement...</div>
+            ) : membersQuery.isError ? (
+              <div className="text-sm text-destructive">Erreur lors du chargement</div>
+            ) : (membersQuery.data?.length ?? 0) === 0 ? (
+              <div className="text-sm text-muted-foreground">Aucun membre</div>
+            ) : (
+              <ul className="space-y-2">
+                {(membersQuery.data as OrganizationMember[] | undefined)?.map((m: OrganizationMember) => (
+                  <li key={m.id} className="text-sm">
+                    {m.name ?? m.email} — {m.role}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
+

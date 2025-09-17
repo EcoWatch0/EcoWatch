@@ -39,7 +39,7 @@ describe('UserService', () => {
   it('findAll -> should list only USER role', async () => {
     (usersService.findMany as any).mockResolvedValue([{ id: 'u1', role: UserRole.USER }]);
     const result = await service.findAll();
-    expect(usersService.findMany).toHaveBeenCalledWith({ where: { role: UserRole.USER } });
+    expect(usersService.findMany).toHaveBeenCalledWith({});
     expect(result).toHaveLength(1);
   });
 
