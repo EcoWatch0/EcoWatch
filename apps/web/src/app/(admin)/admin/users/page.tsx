@@ -8,8 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Search, UserPlus } from "lucide-react"
-import { useUsers, useCreateUser, useDeleteUser, useAdminUsers } from "@/hooks/queries/users"
-import type { User } from "@/lib/api/users"
+import { useCreateUser, useDeleteUser, useAdminUsers } from "@/hooks/queries/users"
+import type { AdminUserListItem } from "@/lib/api/admin"
 import { UserForm } from "@/components/admin/users/user-form"
 import { toast } from "sonner"
 import { OrganizationSelector } from "@/app/(main)/dashboard/components/organization-selector"
@@ -27,7 +27,7 @@ export default function UsersPage() {
   const currentUser = useAuthStore((s) => s.user)
   const isPlatformAdmin = currentUser?.role === "ADMIN"
 
-  const filtered: User[] = useMemo(() => {
+  const filtered: AdminUserListItem[] = useMemo(() => {
     const list = data ?? []
     const q = query.trim().toLowerCase()
     if (!q) return list
@@ -92,7 +92,7 @@ export default function UsersPage() {
         <CardHeader>
           <CardTitle>Utilisateurs</CardTitle>
           <CardDescription>
-            {selectedOrg ? `Utilisateurs de l'organisation` : `Tous les utilisateurs`}
+            {selectedOrg ? `Utilisateurs de l&apos;organisation` : `Tous les utilisateurs`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -113,7 +113,7 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((user: any) => (
+                {filtered.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.firstName} {user.lastName}</TableCell>
                     <TableCell>{user.email}</TableCell>
@@ -154,23 +154,24 @@ export default function UsersPage() {
           {selectedOrg && (
             <Dialog open={openAddToOrg} onOpenChange={setOpenAddToOrg}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline">Ajouter à l'organisation</Button>
+                <Button size="sm" variant="outline">Ajouter à l&apos;organisation</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Ajouter un utilisateur à l'organisation</DialogTitle>
+                  <DialogTitle>Ajouter un utilisateur à l&apos;organisation</DialogTitle>
                 </DialogHeader>
                 <UserForm
                   mode="create"
                   defaultValues={{ email: "", orgRole: "STAFF", ...(isPlatformAdmin ? { makePlatformAdmin: false } : {}) } as never}
                   onSubmit={async (values) => {
                     try {
-                      const v = values as any
+                      type AddToOrgValuesLocal = { email: string; orgRole: "STAFF" | "MANAGER"; makePlatformAdmin?: boolean }
+                      const v = values as AddToOrgValuesLocal
                       await AdminApi.addUserToOrg({ orgId: selectedOrg.id, email: v.email, orgRole: v.orgRole, ...(isPlatformAdmin ? { makePlatformAdmin: Boolean(v.makePlatformAdmin) } : {}) })
-                      toast.success("Utilisateur ajouté à l'organisation")
+                      toast.success("Utilisateur ajouté à l&apos;organisation")
                       setOpenAddToOrg(false)
                     } catch (e) {
-                      const message = e instanceof Error ? e.message : "Erreur lors de l'ajout"
+                      const message = e instanceof Error ? e.message : "Erreur lors de l&apos;ajout"
                       toast.error(message)
                     }
                   }}

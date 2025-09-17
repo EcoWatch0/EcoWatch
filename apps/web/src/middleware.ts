@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import type { Role, OrgRole } from '@/lib/api/auth';
 
-function parseJwt(token: string): any | null {
+function parseJwt(token: string): Record<string, unknown> | null {
   try {
     const base64 = token.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/');
     if (!base64) return null;
     // atob is available in Edge runtime
     const json = atob(base64 + '==='.slice((base64.length + 3) % 4));
-    return JSON.parse(json);
+    return JSON.parse(json) as Record<string, unknown>;
   } catch {
     return null;
   }
@@ -43,8 +44,8 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     const payload = parseJwt(token.value);
-    const role = payload?.role as string | undefined;
-    const orgMemberships = Array.isArray(payload?.orgMemberships) ? payload.orgMemberships as Array<{ organizationId: string; role: string }> : [];
+    const role = payload && typeof payload["role"] === 'string' ? (payload["role"] as Role) : undefined;
+    const orgMemberships = payload && Array.isArray(payload["orgMemberships"]) ? (payload["orgMemberships"] as Array<{ organizationId: string; role: OrgRole | string }>) : [];
     const isAdmin = role === 'ADMIN';
     const isManager = orgMemberships.some(m => m.role === 'MANAGER');
     if (!isAdmin && !isManager) {

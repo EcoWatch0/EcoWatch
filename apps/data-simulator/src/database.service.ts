@@ -230,8 +230,8 @@ export class DatabaseService {
                     SensorType.TEMPERATURE,
                     SensorType.HUMIDITY,
                     SensorType.AIR_QUALITY,
-                    SensorType.PRESSURE,
-                    SensorType.NOISE_LEVEL,
+                    // SensorType.PRESSURE,
+                    // SensorType.NOISE_LEVEL, // Non supportés par le MVP
                 ];
 
                 for (let i = 0; i < numToCreate; i++) {
