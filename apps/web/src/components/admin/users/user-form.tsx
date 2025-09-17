@@ -107,7 +107,7 @@ export function UserForm({
             name={"orgRole" as never}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Rôle dans l'organisation</FormLabel>
+                <FormLabel>Rôle dans l&apos;organisation</FormLabel>
                 <Select value={field.value as string} onValueChange={field.onChange}>
                   <FormControl>
                     <SelectTrigger>
