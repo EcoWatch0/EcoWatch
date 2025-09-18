@@ -2,16 +2,25 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import * as UsersApi from "@/lib/api/users"
+import * as AdminApi from "@/lib/api/admin"
 
 export const usersKeys = {
   all: ["users"] as const,
   detail: (id: string) => [...usersKeys.all, id] as const,
+  admin: (orgId?: string) => ["admin","users", orgId ?? "all"] as const,
 }
 
 export function useUsers() {
   return useQuery({
     queryKey: usersKeys.all,
     queryFn: () => UsersApi.listUsers(),
+  })
+}
+
+export function useAdminUsers(orgId?: string) {
+  return useQuery({
+    queryKey: usersKeys.admin(orgId),
+    queryFn: () => AdminApi.listUsers(orgId),
   })
 }
 

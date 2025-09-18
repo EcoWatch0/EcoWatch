@@ -40,7 +40,7 @@ export const mqttConfig = registerAs('mqtt', () => ({
  */
 export const serviceConfig = registerAs('service', () => ({
     // Nombre de points à envoyer en une seule fois à InfluxDB
-    batchSize: parseInt(process.env.BATCH_SIZE || '100', 10),
+    batchSize: parseInt(process.env.BATCH_SIZE || '10000', 10),
 
     // Intervalle de vidage du buffer en ms
     batchInterval: parseInt(process.env.BATCH_INTERVAL || '5000', 10),

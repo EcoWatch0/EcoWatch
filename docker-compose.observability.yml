@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: ecowatch-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - ecowatch-network
+    depends_on:
+      - blackbox
+      - cadvisor
+      - loki
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: ecowatch-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_METRICS_ENABLED=true
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./config/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3002:3000"
+    networks:
+      - ecowatch-network
+    depends_on:
+      - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: ecowatch-loki
+    command: ["-config.file=/etc/loki-config.yml"]
+    volumes:
+      - ./config/loki-config.yml:/etc/loki-config.yml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - ecowatch-network
+
+  promtail:
+    image: grafana/promtail:2.9.8
+    container_name: ecowatch-promtail
+    command: ["-config.file=/etc/promtail-config.yml"]
+    volumes:
+      - ./config/promtail-config.yml:/etc/promtail-config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - ecowatch-network
+    depends_on:
+      - loki
+
+  blackbox:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: ecowatch-blackbox
+    command: ["--config.file=/etc/blackbox/blackbox.yaml"]
+    volumes:
+      - ./config/blackbox.yaml:/etc/blackbox/blackbox.yaml:ro
+    ports:
+      - "9115:9115"
+    networks:
+      - ecowatch-network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: ecowatch-cadvisor
+    privileged: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - ecowatch-network
+
+networks:
+  ecowatch-network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+
+

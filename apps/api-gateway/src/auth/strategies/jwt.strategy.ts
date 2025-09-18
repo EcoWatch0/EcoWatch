@@ -25,10 +25,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       return null;
     }
 
+    // Load memberships for request-scoped access decisions
+    const memberships = await this.prisma.organizationMembership.findMany({
+      where: { userId: user.id },
+      select: { organizationId: true, role: true },
+    });
+
     return {
       id: user.id,
       email: user.email,
       role: user.role,
+      orgMemberships: memberships,
     };
   }
 } 

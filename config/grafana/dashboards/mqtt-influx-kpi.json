@@ -1,0 +1,57 @@
+{
+  "uid": "mqtt-influx-kpi",
+  "title": "MQTT & Influx KPIs",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 4,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "MQTT TCP availability (%)",
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "targets": [
+        {"expr": "100 * avg_over_time(probe_success{instance=\"rabbitmq:1883\"}[5m])", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "InfluxDB TCP availability (%)",
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "targets": [
+        {"expr": "100 * avg_over_time(probe_success{instance=\"influxdb:8086\"}[5m])", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "MQTT-Influx CPU (cores)",
+      "gridPos": {"x": 0, "y": 8, "w": 8, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "targets": [
+        {"expr": "sum by (container_label_com_docker_compose_service) (rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"mqtt-influxdb-service\"}[5m]))", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "MQTT-Influx Memory",
+      "gridPos": {"x": 8, "y": 8, "w": 8, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "bytes"}},
+      "targets": [
+        {"expr": "avg_over_time(container_memory_usage_bytes{container_label_com_docker_compose_service=\"mqtt-influxdb-service\"}[5m])", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "MQTT-Influx Net RX/TX (B/s)",
+      "gridPos": {"x": 16, "y": 8, "w": 8, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "Bps"}},
+      "targets": [
+        {"expr": "sum by (container_label_com_docker_compose_service) (rate(container_network_receive_bytes_total{container_label_com_docker_compose_service=\"mqtt-influxdb-service\"}[5m]))", "refId": "A"},
+        {"expr": "sum by (container_label_com_docker_compose_service) (rate(container_network_transmit_bytes_total{container_label_com_docker_compose_service=\"mqtt-influxdb-service\"}[5m]))", "refId": "B"}
+      ]
+    }
+  ],
+  "templating": {"list": []}
+}

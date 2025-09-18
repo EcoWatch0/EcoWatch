@@ -6,8 +6,17 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { type UserCreateSchema, userCreateSchema, type UserUpdateSchema, userUpdateSchema } from "@/lib/validation/users"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type { OrgRole } from "@/lib/api/auth"
+import { Checkbox } from "@/components/ui/checkbox"
 
 type Mode = "create" | "edit"
+
+type AddToOrgValues = {
+  email: string
+  orgRole: Extract<OrgRole, "STAFF" | "MANAGER">
+  makePlatformAdmin?: boolean
+}
 
 export type UserFormValuesCreate = UserCreateSchema
 export type UserFormValuesUpdate = UserUpdateSchema
@@ -19,12 +28,12 @@ export function UserForm({
   submitLabel,
 }: {
   mode: Mode
-  defaultValues?: Partial<UserFormValuesCreate & UserFormValuesUpdate>
-  onSubmit: (values: UserFormValuesCreate | UserFormValuesUpdate) => Promise<void> | void
+  defaultValues?: Partial<UserFormValuesCreate & UserFormValuesUpdate & AddToOrgValues>
+  onSubmit: (values: UserFormValuesCreate | UserFormValuesUpdate | AddToOrgValues) => Promise<void> | void
   submitLabel?: string
 }) {
   const schema = mode === "create" ? userCreateSchema : userUpdateSchema
-  const form = useForm<UserFormValuesCreate | UserFormValuesUpdate>({
+  const form = useForm<UserFormValuesCreate | UserFormValuesUpdate | AddToOrgValues>({
     resolver: zodResolver(schema as never),
     defaultValues: defaultValues as never,
     mode: "onSubmit",
@@ -32,7 +41,7 @@ export function UserForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(async (vals: UserFormValuesCreate | UserFormValuesUpdate) => { await onSubmit(vals) })} className="space-y-4">
+      <form onSubmit={form.handleSubmit(async (vals: UserFormValuesCreate | UserFormValuesUpdate | AddToOrgValues) => { await onSubmit(vals) })} className="space-y-4">
         <FormField
           control={form.control}
           name="firstName"
@@ -90,6 +99,49 @@ export function UserForm({
             )}
           />
         )}
+
+        {/* Optional org role selector (used in Add-to-Organization modal) */}
+        {("orgRole" in (defaultValues ?? {})) && (
+          <FormField
+            control={form.control}
+            name={"orgRole" as never}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Rôle dans l&apos;organisation</FormLabel>
+                <Select value={field.value as string} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir un rôle" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="STAFF">STAFF</SelectItem>
+                    <SelectItem value="MANAGER">MANAGER</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        {/* Optional platform admin toggle (only shown for platform admins) */}
+        {("makePlatformAdmin" in (defaultValues ?? {})) && (
+          <FormField
+            control={form.control}
+            name={"makePlatformAdmin" as never}
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="make-admin" checked={Boolean(field.value)} onCheckedChange={(v) => field.onChange(Boolean(v))} />
+                  <FormLabel htmlFor="make-admin">Accorder le rôle ADMIN plateforme</FormLabel>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
 
         <div className="flex justify-end gap-2">
           <Button type="submit" disabled={form.formState.isSubmitting}>

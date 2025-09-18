@@ -8,19 +8,26 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Search, UserPlus } from "lucide-react"
-import { useUsers, useCreateUser, useDeleteUser } from "@/hooks/queries/users"
-import type { User } from "@/lib/api/users"
+import { useCreateUser, useDeleteUser, useAdminUsers } from "@/hooks/queries/users"
+import type { AdminUserListItem } from "@/lib/api/admin"
 import { UserForm } from "@/components/admin/users/user-form"
 import { toast } from "sonner"
+import { OrganizationSelector } from "@/app/(main)/dashboard/components/organization-selector"
+import * as AdminApi from "@/lib/api/admin"
+import { useAuthStore } from "@/store/auth-store"
 
 export default function UsersPage() {
-  const { data, isLoading, isError } = useUsers()
+  const [selectedOrg, setSelectedOrg] = useState<{ id: string; name: string } | null>(null)
+  const { data, isLoading, isError } = useAdminUsers(selectedOrg?.id)
   const createMutation = useCreateUser()
   const deleteMutation = useDeleteUser()
   const [query, setQuery] = useState("")
   const [openCreate, setOpenCreate] = useState(false)
+  const [openAddToOrg, setOpenAddToOrg] = useState(false)
+  const currentUser = useAuthStore((s) => s.user)
+  const isPlatformAdmin = currentUser?.role === "ADMIN"
 
-  const filtered: User[] = useMemo(() => {
+  const filtered: AdminUserListItem[] = useMemo(() => {
     const list = data ?? []
     const q = query.trim().toLowerCase()
     if (!q) return list
@@ -60,6 +67,10 @@ export default function UsersPage() {
             />
           </DialogContent>
         </Dialog>
+
+        <div className="w-full sm:w-64">
+          <OrganizationSelector value={selectedOrg?.id} onChange={(org) => setSelectedOrg(org ? { id: org.id, name: org.name } : null)} />
+        </div>
       </div>
 
       <Card>
@@ -80,7 +91,9 @@ export default function UsersPage() {
       <Card>
         <CardHeader>
           <CardTitle>Utilisateurs</CardTitle>
-          <CardDescription>Liste de tous les utilisateurs et leurs informations</CardDescription>
+          <CardDescription>
+            {selectedOrg ? `Utilisateurs de l&apos;organisation` : `Tous les utilisateurs`}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -104,7 +117,7 @@ export default function UsersPage() {
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.firstName} {user.lastName}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role}</TableCell>
+                    <TableCell>{selectedOrg ? (user.orgRole ?? "-") : user.role}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -138,6 +151,35 @@ export default function UsersPage() {
         </CardContent>
         <CardFooter className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">{filtered.length} utilisateurs</p>
+          {selectedOrg && (
+            <Dialog open={openAddToOrg} onOpenChange={setOpenAddToOrg}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline">Ajouter à l&apos;organisation</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Ajouter un utilisateur à l&apos;organisation</DialogTitle>
+                </DialogHeader>
+                <UserForm
+                  mode="create"
+                  defaultValues={{ email: "", orgRole: "STAFF", ...(isPlatformAdmin ? { makePlatformAdmin: false } : {}) } as never}
+                  onSubmit={async (values) => {
+                    try {
+                      type AddToOrgValuesLocal = { email: string; orgRole: "STAFF" | "MANAGER"; makePlatformAdmin?: boolean }
+                      const v = values as AddToOrgValuesLocal
+                      await AdminApi.addUserToOrg({ orgId: selectedOrg.id, email: v.email, orgRole: v.orgRole, ...(isPlatformAdmin ? { makePlatformAdmin: Boolean(v.makePlatformAdmin) } : {}) })
+                      toast.success("Utilisateur ajouté à l&apos;organisation")
+                      setOpenAddToOrg(false)
+                    } catch (e) {
+                      const message = e instanceof Error ? e.message : "Erreur lors de l&apos;ajout"
+                      toast.error(message)
+                    }
+                  }}
+                  submitLabel="Ajouter"
+                />
+              </DialogContent>
+            </Dialog>
+          )}
         </CardFooter>
       </Card>
     </div>

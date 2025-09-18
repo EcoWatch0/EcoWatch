@@ -65,12 +65,14 @@ export default function AdminLayout({
         </div>
         <div className="flex items-center ml-auto gap-4">
           <ModeToggle />
-          <Button variant="outline" size="sm" asChild>
-            <Link href={switchHref}>
+          {switchLabel && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={switchHref}>
               <SwitchIcon className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline-flex">{switchLabel}</span>
-            </Link>
-          </Button>
+              </Link>
+            </Button>
+          )}
         </div>
       </header>
 
@@ -93,13 +95,15 @@ export default function AdminLayout({
                 </Link>
               ))}
               <div className="border-t my-2 mx-3"></div>
-              <Link
-                href={switchHref}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
-              >
-                <SwitchIcon className="h-5 w-5" />
-                {switchLabel}
-              </Link>
+              {switchLabel && (
+                <Link
+                  href={switchHref}
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+                >
+                  <SwitchIcon className="h-5 w-5" />
+                  {switchLabel}
+                </Link>
+              )}
             </nav>
           </ScrollArea>
         </aside>
