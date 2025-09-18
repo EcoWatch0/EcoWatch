@@ -1,0 +1,66 @@
+{
+  "uid": "api-kpi",
+  "title": "API KPIs",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 6,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "API availability (5m avg, %)",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "targets": [
+        {"expr": "100 * avg_over_time(probe_success{instance=\"http://api:3001/docs\"}[5m])", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Response time avg (s)",
+      "gridPos": {"x": 6, "y": 0, "w": 9, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [
+        {"expr": "avg_over_time(probe_duration_seconds{instance=\"http://api:3001/docs\"}[5m])", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Availability (%, over time)",
+      "gridPos": {"x": 15, "y": 0, "w": 9, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "targets": [
+        {"expr": "100 * avg_over_time(probe_success{instance=\"http://api:3001/docs\"}[5m])", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "API CPU (cores)",
+      "gridPos": {"x": 0, "y": 8, "w": 8, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "targets": [
+        {"expr": "sum by (container_label_com_docker_compose_service) (rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"api\"}[5m]))", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "API Memory",
+      "gridPos": {"x": 8, "y": 8, "w": 8, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "bytes"}},
+      "targets": [
+        {"expr": "avg_over_time(container_memory_usage_bytes{container_label_com_docker_compose_service=\"api\"}[5m])", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "API Net RX/TX (B/s)",
+      "gridPos": {"x": 16, "y": 8, "w": 8, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "Bps"}},
+      "targets": [
+        {"expr": "sum by (container_label_com_docker_compose_service) (rate(container_network_receive_bytes_total{container_label_com_docker_compose_service=\"api\"}[5m]))", "refId": "A"},
+        {"expr": "sum by (container_label_com_docker_compose_service) (rate(container_network_transmit_bytes_total{container_label_com_docker_compose_service=\"api\"}[5m]))", "refId": "B"}
+      ]
+    }
+  ],
+  "templating": {"list": []}
+}

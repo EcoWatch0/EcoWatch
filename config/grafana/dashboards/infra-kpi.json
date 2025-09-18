@@ -1,0 +1,53 @@
+{
+  "uid": "infra-kpi",
+  "title": "Infra KPIs",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 4,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Prometheus up",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "targets": [
+        {"expr": "up{job=\"prometheus\"}", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Grafana uptime (%)",
+      "gridPos": {"x": 6, "y": 0, "w": 9, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "targets": [
+        {"expr": "100 * avg_over_time(probe_success{instance=\"http://grafana:3000/login\"}[5m])", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Total container CPU (cores)",
+      "gridPos": {"x": 15, "y": 0, "w": 9, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "targets": [
+        {"expr": "sum(rate(container_cpu_usage_seconds_total[5m]))", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Loki ingested log lines/s",
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "sum(rate(loki_distributor_bytes_received_total[5m]))", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Container start time (seconds)",
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "container_start_time_seconds", "refId": "A"}
+      ]
+    }
+  ],
+  "templating": {"list": []}
+}
